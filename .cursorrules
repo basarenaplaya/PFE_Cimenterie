@@ -1,0 +1,168 @@
+# Cursor Rules for PFE Dashboard & PLC Gateway
+
+## Foundational Principles
+
+This is a **strict, production-grade OT/IT integration system**. All code must:
+- Preserve explicit data contracts between backend and frontend
+- Maintain idempotent state transitions (no inference heuristics)
+- Fail closed (explicit error over silent degradation)
+- Log all state changes and command dispatches
+- Use parameterized queries exclusively (no string interpolation for SQL)
+
+## Backend Standards (Node.js/Express)
+
+### Architecture
+- **Database**: mysql2/promise (not an ORM). All queries parameterized with `?` placeholders.
+- **Async Patterns**: All async functions wrapped with `asyncHandler` utility. Try/catch blocks at handler level.
+- **Response Format**: Always `sendSuccess()` or `HttpError` via utils. Never send raw res.json().
+- **Modularity**: No monolithic files. Controllers <100 lines, services <200 lines, routes per-domain (authRouter, machineRouter).
+
+### Validation
+- **Input**: Use Joi schemas for all request bodies/queries/params. Validate before processing.
+- **Schema Example**:
+  ```javascript
+  const machineCommandSchema = Joi.object({
+    command: Joi.string().required(),
+    value: Joi.alternatives().try(Joi.number(), Joi.boolean()).optional(),
+  });
+  ```
+- **Middleware Chain**: `validateBody(schema)` → `verifyToken` → `verifyAdmin` (if needed) → handler
+
+### Database Queries
+- **Parameterized**: `const [rows] = await pool.execute(sql, [userId, limit])` ✓
+- **Never**: String concatenation, template literals, or sprintf in SQL queries ✗
+- **Transaction**: Use `connection.beginTransaction()` for multi-step writes (e.g., insert production_log + update machine_status)
+
+### JWT & Authentication
+- **Issuance**: `jwt.sign({ sub: userId, username, role }, jwtSecret, { expiresIn: '8h' })`
+- **Extraction**: Bearer token from `Authorization: Bearer <token>` header
+- **Verification**: `jwt.verify(token, jwtSecret)` in `verifyToken` middleware
+- **Claims**: Always include `sub` (user ID), `username`, `role` (ADMIN or OPERATOR)
+- **Password**: bcrypt.hash(password, 12) for storage; bcrypt.compare() for login
+
+### PLC Service Contract
+- **DB4 Memory Map**: Frozen object with 16 tags (Poids_Reel_Web→DB4,REAL2; Active_Spout_ID→DB4,INT22, etc.)
+- **Read Cycle**: 500ms polling via nodes7 library; normalizeTelemetry() output must include BOTH legacy UI keys AND canonical backend fields
+- **Write Dispatch**: Sequential `plcService.writeTag(alias, value)` calls via machineController
+- **Telemetry Contract**:
+  ```javascript
+  {
+    // Legacy UI keys
+    weight, target_weight, motor_ensacheuse, motor_bande, active_spout, angle,
+    mode_local, mode_central, defaut, arret_urgence, Bags_Produced_Counter,
+    // Canonical backend fields
+    Production_Counter, Live_Weight, Last_Bag_Target, Last_Spout_ID, Machine_Mode,
+    Alarms: { js1, js2, js3, js4, js5 },
+    _ts: timestamp
+  }
+  ```
+
+### Audit & Logging
+- **Audit Actions**: `logAuditAction({ userId, action, ipAddress })` for all auth and admin commands
+- **Machine Commands**: Log attempt → success/failure with error context (first 40 chars of error message)
+- **Non-Blocking**: Audit log failures must not block request completion (use `.catch()` silently)
+- **Database Writes**: All inserts/updates to production_logs, alarm_logs, audit_logs must include timestamp (UTC)
+
+### Rate Limiting
+- **Auth Routes** (`/api/auth/*`): 100 requests per 15 minutes per IP
+- **Admin Routes** (`/api/admin/*`): 300 requests per 15 minutes per IP
+- **Data Read Routes** (`/api/data/*`): 600 requests per 15 minutes per IP
+- **Machine Commands** (`/api/machine/command`): 120 requests per 15 minutes per IP
+- **Implementation**: Use express-rateLimit with store=RedisStore (or memory if no Redis)
+
+### Error Handling
+- **HttpError Format**: `new HttpError(statusCode, message, details?)`
+- **Example**: `throw new HttpError(400, "Validation failed.", ["command is required"])`
+- **No Uncaught Exceptions**: All async errors caught by `asyncHandler` wrapper
+
+## Frontend Standards (React/Vite)
+
+### Component Structure
+- **Functional Components Only**: No class components. Use hooks exclusively.
+- **Component Files**: <150 lines per file. Extract complex logic to custom hooks.
+- **File Structure**:
+  ```
+  src/
+    components/       (Shadcn UI + custom)
+    pages/           (Page-level components)
+    hooks/           (Custom React hooks)
+    contexts/        (React Context for global state)
+    services/        (API calls, utilities)
+    utils/           (Helpers, constants)
+  ```
+
+### Styling
+- **Tailwind CSS**: Utility-first. No custom CSS unless absolutely necessary.
+- **Component Library**: Shadcn UI (Button, Card, Input, Badge, etc.). Import from `@/components/ui`
+- **Icons**: Lucide React (`lucide-react` package)
+- **Dark Mode**: Support via `dark:` prefix (e.g., `bg-white dark:bg-slate-900`)
+
+### State Management
+- **React Context**: Use for global state (dashboard data, auth, machine status)
+- **Hooks**: `useState` for local component state; `useEffect` for side effects
+- **Provider Pattern**: Wrap app with `DashboardDataProvider` to expose telemetry globally
+- **No Redux/Zustand**: Context is sufficient for this scope
+
+### API Integration
+- **Base URL**: Resolved from `VITE_API_BASE_URL` environment variable (defaults to `http://localhost:5000`)
+- **Calls**: Use fetch with Bearer token in Authorization header
+- **Response Handling**: Check `response.ok` before parsing JSON; throw on non-2xx status
+- **Error Handling**: Show toast notifications for failed API calls
+
+### Socket.io Integration
+- **Connection**: Establish in Context provider on mount; listen for `telemetry_update`, `realtime_status`, `plc-status`
+- **Authentication**: Pass JWT via `auth.token` in connection options or URL hash
+- **Listeners**: All Socket.io event handlers must be in `useEffect` cleanup chain (avoid memory leaks)
+
+### Iframe Embedding (Native Machine UI)
+- **Source Path**: `/machine/native` served by backend Express (GET handler returns index.html)
+- **Authentication**: JWT passed via URL hash: `#token=<encodeURIComponent(token)>`
+- **CSP Headers**: Backend sets `frame-ancestors: 'self' http://localhost:5173` via helmet
+- **Parent Wrapper**: Use full-height Card with responsive styling (`min-h-[75vh] h-[calc(100vh-12rem)]`)
+
+### Validation & Data Integrity
+- **Input Sanitization**: Use `sanitizeFields()` utility to strip whitespace and validate strings
+- **Number Coercion**: Explicit `Number()` or `parseInt()` for PLC values (never implicit coercion)
+- **Null Checks**: Guard all telemetry fields with `?.` optional chaining or explicit checks
+- **No Inference**: If a field is missing or undefined, leave it as-is (don't guess)
+
+## Production Deployment
+
+### Environment Variables
+- **Backend**: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `CORS_ORIGIN`, `NODE_ENV`
+- **Frontend**: `VITE_API_BASE_URL`, `VITE_API_URL`
+- **Security**: Never commit `.env` files; use environment secret management (GitHub Actions Secrets, etc.)
+
+### Database Initialization
+- **Schema**: Run migrations in order (schema creation must be idempotent)
+- **Indexes**: Add indexes on frequently queried columns (userId, productionCounter, created_at)
+- **Timezone**: Set to UTC (Z) for all timestamp columns
+
+### Docker/Build
+- **Backend**: Build with `npm run build` (transpile if needed); expose port 5000
+- **Frontend**: Build with `npm run build`; serve dist/ via static file handler
+- **Reverse Proxy**: Use nginx to route `/api/*` to backend, `/*` to frontend
+
+### Monitoring & Logs
+- **Backend Logs**: Log all errors to stderr; include request ID, timestamp, error context
+- **Database**: Log slow queries (>1000ms); monitor connection pool saturation
+- **Frontend**: Send runtime errors to Sentry or similar error tracking service
+- **Audit Trail**: Query audit_logs table regularly to detect anomalies
+
+## Code Review Checklist
+
+- [ ] All async functions wrapped with `asyncHandler`
+- [ ] All database queries use parameterized placeholders (`?`)
+- [ ] All request inputs validated with Joi schemas
+- [ ] All responses use `sendSuccess()` or `HttpError`
+- [ ] JWT includes sub, username, role claims
+- [ ] Passwords hashed with bcrypt 12 rounds
+- [ ] Rate limiters applied to auth and admin routes
+- [ ] Audit logs created for auth and machine commands
+- [ ] React components are functional (no class components)
+- [ ] Tailwind CSS used for all styling
+- [ ] Socket.io listeners properly cleaned up in useEffect
+- [ ] No hardcoded API URLs in frontend
+- [ ] No inference heuristics in state transitions
+- [ ] Error messages are user-friendly but logs contain full context
+- [ ] Documentation updated for new routes/endpoints

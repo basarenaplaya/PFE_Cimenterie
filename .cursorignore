@@ -1,0 +1,188 @@
+# =============================================================================
+# Cursor Ignore Rules - PFE Dashboard & PLC Gateway
+# =============================================================================
+# Purpose: Optimize indexing, performance, and token usage without limiting
+#          IDE capabilities for development, debugging, and knowledge transfer.
+#
+# Strategy: Ignore only transient/generated files; keep all source code,
+#           configuration, tests, and documentation accessible.
+# =============================================================================
+
+# =============================================================================
+# DEPENDENCIES & NODE MODULES (Auto-generated, never edit)
+# =============================================================================
+node_modules/
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
+.pnpm-store/
+.yarn/
+dist/
+build/
+out/
+
+# =============================================================================
+# BUILD ARTIFACTS & OUTPUT (Never need to index)
+# =============================================================================
+.vite/
+.next/
+.nuxt/
+coverage/
+tmp/
+temp/
+*.tsbuildinfo
+
+# =============================================================================
+# ENVIRONMENT & SECRETS (Never commit, never index)
+# =============================================================================
+.env
+.env.local
+.env.*.local
+.env.production.local
+.env.development.local
+
+# =============================================================================
+# VERSION CONTROL & GIT (Internal metadata, not code)
+# =============================================================================
+.git/
+.gitignore
+.gitattributes
+.github/workflows/
+.gitmodules
+
+# =============================================================================
+# IDE & EDITOR ARTIFACTS (IDE-specific, not project code)
+# =============================================================================
+.vscode/extensions/
+.vscode/settings.json
+.vscode/*.log
+*.vsix
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.sublime-workspace
+*.sublime-project
+.emacs.d/
+
+# =============================================================================
+# LOGS, CACHES, TEMP FILES (Runtime artifacts, no logic)
+# =============================================================================
+*.log
+logs/
+.cache/
+.eslintcache
+.turbo/
+dist-ssr/
+*.tmp
+.npm/
+.node-gyp/
+
+# =============================================================================
+# TEST ARTIFACTS & COVERAGE (Generated reports, not source)
+# =============================================================================
+.nyc_output/
+coverage/
+*.lcov
+junit.xml
+test-results/
+cypress/videos/
+cypress/screenshots/
+
+# =============================================================================
+# DOCKER & CONTAINER (Container internals, not needed for IDE)
+# =============================================================================
+.dockerignore
+Dockerfile.*
+docker-compose.*.yml
+.docker/
+
+# =============================================================================
+# OS FILES & BACKUPS (System, not project)
+# =============================================================================
+*.bak
+*.backup
+*.old
+*.swp
+*~
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+.Thumbs.db
+
+# =============================================================================
+# BUILD & DEPLOYMENT ARTIFACTS (Generated, not source)
+# =============================================================================
+dist/
+.next/
+.nuxt/
+build/
+out/
+.vercel/
+.firebase/
+.env.*.prod
+
+# =============================================================================
+# DATABASE & DATA FILES (Transient, not code)
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+data/
+backups/
+*.dump
+
+# =============================================================================
+# COMPRESSED ARCHIVES (Not needed indexed)
+# =============================================================================
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+*.bz2
+
+# =============================================================================
+# OPTIONAL: Additional Performance Optimizations
+# (Uncomment if indexing speed becomes an issue)
+# =============================================================================
+
+# Vendor directories (if any)
+# vendor/
+# third_party/
+
+# Large asset directories (if repo contains media)
+# assets/*.png
+# assets/*.jpg
+# assets/*.mp4
+# assets/*.webm
+
+# =============================================================================
+# IMPORTANT: DO NOT IGNORE (Keep accessible)
+# =============================================================================
+# These are intentionally NOT ignored:
+# - src/**/*.{js,jsx,ts,tsx}     (All source code)
+# - public/                        (Static assets)
+# - docs/                          (Architecture documentation)
+# - .cursorrules                   (Coding standards)
+# - CORE_ARCHITECTURE.md           (System design)
+# - DATA_FLOW_AND_STATE.md         (State machine docs)
+# - SECURITY_POLICY.md             (Security implementation)
+# - *.config.js                    (Build/lint configuration)
+# - .eslintrc*                     (Linter rules)
+# - tsconfig.json                  (TypeScript config)
+# - package.json                   (Dependencies & scripts)
+# - *.md                           (All documentation)
+# - tests/                         (Test code)
+# - __tests__/                     (Test code)
+# - *.test.js                      (Test files)
+# - *.spec.js                      (Test files)
+# ============================================================================
