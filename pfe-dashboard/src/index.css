@@ -1,0 +1,176 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.985 0.004 260);
+  --foreground: oklch(0.19 0.015 260);
+  --card: oklch(1 0.001 260);
+  --card-foreground: oklch(0.19 0.015 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.19 0.015 260);
+  --primary: oklch(0.42 0.08 220);
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.95 0.01 260);
+  --secondary-foreground: oklch(0.23 0.015 260);
+  --muted: oklch(0.95 0.01 260);
+  --muted-foreground: oklch(0.51 0.02 260);
+  --accent: oklch(0.94 0.015 205);
+  --accent-foreground: oklch(0.24 0.02 240);
+  --destructive: oklch(0.62 0.24 28);
+  --border: oklch(0.9 0.01 260);
+  --input: oklch(0.9 0.01 260);
+  --ring: oklch(0.6 0.05 220);
+  --chart-1: oklch(0.74 0.14 205);
+  --chart-2: oklch(0.72 0.13 165);
+  --chart-3: oklch(0.71 0.15 50);
+  --chart-4: oklch(0.68 0.1 275);
+  --chart-5: oklch(0.58 0.1 12);
+  --radius: 0.8rem;
+  --font-sans: "Geist Variable", sans-serif;
+}
+
+.dark {
+  --background: oklch(0.14 0.01 260);
+  --foreground: oklch(0.97 0 0);
+  --card: oklch(0.18 0.012 260);
+  --card-foreground: oklch(0.97 0 0);
+  --popover: oklch(0.18 0.012 260);
+  --popover-foreground: oklch(0.97 0 0);
+  --primary: oklch(0.74 0.12 205);
+  --primary-foreground: oklch(0.14 0.01 260);
+  --secondary: oklch(0.24 0.015 260);
+  --secondary-foreground: oklch(0.96 0 0);
+  --muted: oklch(0.24 0.015 260);
+  --muted-foreground: oklch(0.72 0.02 260);
+  --accent: oklch(0.24 0.015 260);
+  --accent-foreground: oklch(0.96 0 0);
+  --destructive: oklch(0.68 0.19 23);
+  --border: oklch(0.28 0.015 260);
+  --input: oklch(0.28 0.015 260);
+  --ring: oklch(0.62 0.08 205);
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    overflow-x: clip;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(15, 118, 110, 0.08), transparent 32%),
+      radial-gradient(circle at 84% 3%, rgba(14, 165, 233, 0.08), transparent 28%);
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(circle at 15% 8%, rgba(20, 184, 166, 0.12), transparent 34%),
+      radial-gradient(circle at 84% 3%, rgba(6, 182, 212, 0.1), transparent 30%);
+  }
+}
+
+@layer utilities {
+  @keyframes dashboardEnter {
+    from {
+      opacity: 0;
+      transform: translateY(12px) scale(0.995);
+      filter: blur(2px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes routeEnter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+      filter: blur(1px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  .dashboard-enter {
+    animation: dashboardEnter 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .route-enter {
+    animation: routeEnter 260ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  .header-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .mobile-main-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 9rem);
+  }
+
+  .status-strip-safe {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 4.9rem);
+  }
+
+  .quick-nav-safe {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-enter,
+  .route-enter {
+    animation: none;
+  }
+}
+
+@media (min-width: 768px) {
+  .mobile-main-safe {
+    padding-bottom: 1.5rem;
+  }
+}

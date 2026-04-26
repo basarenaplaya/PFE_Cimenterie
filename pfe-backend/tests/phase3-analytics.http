@@ -1,0 +1,46 @@
+@baseUrl = http://localhost:5000/api
+@adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoiYWRtaW5fMDEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzYxMjc0MTcsImV4cCI6MTc3NjE1NjIxN30.gvWblUNcCaE9POpZ2vVlxYmsk4J_OifJ67FEBsgilhw
+@operatorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXJuYW1lIjoib3BlcmF0b3JfMDEiLCJyb2xlIjoiT1BFUkFUT1IiLCJpYXQiOjE3NzYxMjc0NDAsImV4cCI6MTc3NjE1NjI0MH0.tC67149iebHB1qGWmE-57nnZbTh6V8x0-4ivy_QCKkA
+
+### Production history with operator access (should be 200)
+GET {{baseUrl}}/production?page=1&limit=20
+Authorization: Bearer {{operatorToken}}
+
+### Production history with filters (date + spout)
+GET {{baseUrl}}/production?page=1&limit=20&startDate=2026-04-01T00:00:00.000Z&endDate=2026-04-30T23:59:59.999Z&spout_id=1
+Authorization: Bearer {{adminToken}}
+
+### Production history invalid range (should be 400)
+GET {{baseUrl}}/production?startDate=2026-04-30T23:59:59.999Z&endDate=2026-04-01T00:00:00.000Z
+Authorization: Bearer {{adminToken}}
+
+### Production history missing token (should be 401)
+GET {{baseUrl}}/production?page=1&limit=20
+
+### Alarm history all
+GET {{baseUrl}}/alarms?page=1&limit=20
+Authorization: Bearer {{operatorToken}}
+
+### Alarm history Active only
+GET {{baseUrl}}/alarms?page=1&limit=20&status=Active
+Authorization: Bearer {{adminToken}}
+
+### Alarm history Cleared only with date filters
+GET {{baseUrl}}/alarms?page=1&limit=20&status=Cleared&startDate=2026-04-01T00:00:00.000Z&endDate=2026-04-30T23:59:59.999Z
+Authorization: Bearer {{adminToken}}
+
+### Alarm history invalid status (should be 400)
+GET {{baseUrl}}/alarms?status=Unknown
+Authorization: Bearer {{adminToken}}
+
+### KPI aggregation for current day (both roles can read)
+GET {{baseUrl}}/analytics/kpis
+Authorization: Bearer {{operatorToken}}
+
+### Production chart by hour for current day (both roles can read)
+GET {{baseUrl}}/analytics/production-chart
+Authorization: Bearer {{operatorToken}}
+
+### SQLi-style spout_id attempt should fail validation (400)
+GET {{baseUrl}}/production?spout_id=1%20OR%201=1
+Authorization: Bearer {{adminToken}}

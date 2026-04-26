@@ -1,0 +1,125 @@
+@baseUrl = http://localhost:5000/api
+@adminToken = REPLACE_WITH_ADMIN_TOKEN
+@operatorToken = REPLACE_WITH_OPERATOR_TOKEN
+@userId = REPLACE_WITH_CREATED_USER_ID
+@cameraId = REPLACE_WITH_CREATED_CAMERA_ID
+
+### Admin access probe (should be 200)
+GET {{baseUrl}}/auth/admin-probe
+Authorization: Bearer {{adminToken}}
+
+### Operator access to admin API (should be 403)
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{operatorToken}}
+
+### Create managed user (ADMIN only, should be 201)
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "username": "operator_02",
+  "password": "StrongPass!234",
+  "full_name": "Operator Two",
+  "role": "OPERATOR",
+  "avatar_url": "operator_two.png"
+}
+
+### List users (should include operator_02 and return meta pagination)
+GET {{baseUrl}}/admin/users?page=1&limit=20
+Authorization: Bearer {{adminToken}}
+
+### Get user by id
+GET {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Update user profile/role-safe fields
+PUT {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "full_name": "Operator Two Updated",
+  "avatar_url": "operator_two_updated.png"
+}
+
+### Update user active status
+PUT {{baseUrl}}/admin/users/{{userId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "is_active": false
+}
+
+### Reactivate user
+PUT {{baseUrl}}/admin/users/{{userId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "is_active": true
+}
+
+### Create camera
+POST {{baseUrl}}/admin/cameras
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "cam_name": "Line A - Camera 1",
+  "ip_url": "rtsp://192.168.1.100:554/stream1"
+}
+
+### Create camera with invalid URL should fail (400)
+POST {{baseUrl}}/admin/cameras
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "cam_name": "Invalid Camera",
+  "ip_url": "ftp://camera.local/stream"
+}
+
+### List cameras (should return meta pagination)
+GET {{baseUrl}}/admin/cameras?page=1&limit=20
+Authorization: Bearer {{adminToken}}
+
+### List cameras including last_snapshot (watch UI; payloads can be large)
+GET {{baseUrl}}/admin/cameras?page=1&limit=50&include_snapshots=true
+Authorization: Bearer {{adminToken}}
+
+### Patch cached snapshot (must be JPEG/PNG/WEBP data URL; max size enforced server-side)
+PATCH {{baseUrl}}/admin/cameras/{{cameraId}}/snapshot
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "last_snapshot": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////2wBDAf//////////////////////////////////////////////////////////////////////////////////////wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAX/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAA8A/9k="
+}
+
+### Get camera by id
+GET {{baseUrl}}/admin/cameras/{{cameraId}}
+Authorization: Bearer {{adminToken}}
+
+### Update camera
+PUT {{baseUrl}}/admin/cameras/{{cameraId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "cam_name": "Line A - Camera 1 Updated",
+  "ip_url": "rtsp://192.168.1.100:554/stream-main"
+}
+
+### Delete camera (logs ADMIN_CAMERA_DELETE)
+DELETE {{baseUrl}}/admin/cameras/{{cameraId}}
+Authorization: Bearer {{adminToken}}
+
+### Delete managed user (logs ADMIN_USER_DELETE)
+DELETE {{baseUrl}}/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Audit logs should include all create/update/delete actions and return meta pagination
+GET {{baseUrl}}/admin/audit-logs?page=1&limit=50&action=ADMIN_
+Authorization: Bearer {{adminToken}}

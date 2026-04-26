@@ -1,0 +1,627 @@
+:root {
+    --metal: #7f8c8d;
+    --belt: #222;
+    --cement-bag: #d2b48c;
+    --cement-powder: #95a5a6;
+    --danger: #e74c3c;
+    --safe: #2ecc71;
+    --wood: #8b4513;
+    --panel: #16213e;
+    --text: #eef4ff;
+    --muted: #a2b2c9;
+    --stage-scale: 1;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    min-height: 100%;
+    overflow-x: hidden;
+}
+
+html,
+body {
+    min-height: 100%;
+}
+
+body {
+    margin: 0;
+    width: 100%;
+    font-family: "Segoe UI", Tahoma, sans-serif;
+    color: var(--text);
+    background: radial-gradient(circle at top, #23395d 0%, #101820 55%, #0b1118 100%);
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.app-shell {
+    box-sizing: border-box;
+    min-height: 100dvh;
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+}
+
+.header {
+    background: linear-gradient(120deg, #14213d 0%, #243b55 100%);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 6px 12px;
+    text-align: center;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: clamp(1rem, 2.1vw, 1.55rem);
+}
+
+.header small {
+    color: var(--muted);
+}
+
+@media (max-height: 960px) {
+    .header small {
+        display: none;
+    }
+}
+
+.main-layout {
+    min-height: 0;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 10px;
+}
+
+.factory-panel,
+.controls-panel,
+.screen-panel {
+    background: rgba(22, 33, 62, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+}
+
+.factory-panel {
+    min-height: 0;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.stage-wrap {
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    overflow: hidden;
+}
+
+.factory-viewport {
+    width: calc(1280px * var(--stage-scale, 1));
+    height: calc(720px * var(--stage-scale, 1));
+    margin-inline: auto;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.factory {
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    transform: scale(var(--stage-scale, 1));
+    transform-origin: top left;
+    background: linear-gradient(180deg, #0f3460 0%, #0d2f54 70%, #0b223b 100%);
+    border-radius: 14px;
+    border-bottom: 10px solid #16213e;
+    overflow: hidden;
+}
+
+#worker {
+    position: absolute;
+    left: 80px;
+    bottom: 40px;
+    font-size: 60px;
+    z-index: 100;
+    transition: transform 0.7s;
+}
+
+.worker-action {
+    transform: translate(120px, -120px);
+}
+
+.machine-hub {
+    position: absolute;
+    left: 150px;
+    top: 40px;
+    width: 380px;
+    height: 380px;
+    border: 12px solid var(--metal);
+    border-radius: 50%;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.machine-label {
+    position: absolute;
+    color: #ecf0f1;
+    font-weight: 700;
+    font-size: 14px;
+    text-align: center;
+    text-transform: uppercase;
+    z-index: 15;
+    width: 180px;
+    pointer-events: none;
+}
+
+#becs-container {
+    position: absolute;
+    inset: 0;
+}
+
+.rotating {
+    animation: rotate360 25s linear infinite;
+}
+
+@keyframes rotate360 {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.bec-unit {
+    position: absolute;
+    width: 60px;
+    height: 140px;
+    left: 160px;
+    top: -50px;
+    transform-origin: center 240px;
+    text-align: center;
+}
+
+.spout-id {
+    width: 18px;
+    margin: 0 auto 2px;
+    border-radius: 10px;
+    border: 1px solid #5d6d7e;
+    background: rgba(0, 0, 0, 0.75);
+    color: #ecf0f1;
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    line-height: 14px;
+}
+
+.valve {
+    width: 16px;
+    height: 22px;
+    background: #d35400;
+    margin: 0 auto;
+    border: 1px solid #000;
+}
+
+.valve-on {
+    background: var(--safe);
+    box-shadow: 0 0 10px var(--safe);
+}
+
+.presence-voyant {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--danger);
+    margin: 3px auto;
+    border: 1px solid #000;
+}
+
+.presence-active {
+    background: var(--safe);
+    box-shadow: 0 0 8px var(--safe);
+}
+
+.weight-display-bec {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    color: #0f0;
+    background: #000;
+    padding: 2px;
+    border-radius: 3px;
+    display: none;
+    margin-bottom: 2px;
+}
+
+.sac-realist {
+    width: 42px;
+    height: 65px;
+    background: #fff;
+    margin: 0 auto;
+    border-radius: 5px 5px 2px 2px;
+    border: 2px solid #ccc;
+    display: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.cement-fill {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 0%;
+    background: var(--cement-powder);
+    transition: height 0.2s linear;
+}
+
+.sac-realist::after {
+    content: "ZITOUNA";
+    position: absolute;
+    top: 25px;
+    left: 0;
+    width: 100%;
+    font-size: 6px;
+    font-weight: 700;
+    color: #555;
+    text-align: center;
+    z-index: 2;
+}
+
+.capteur-c10 {
+    position: absolute;
+    left: 540px;
+    bottom: 110px;
+    width: 12px;
+    height: 40px;
+    background: #f1c40f;
+    border: 2px solid #000;
+    z-index: 100;
+}
+
+.c10-light {
+    width: 6px;
+    height: 6px;
+    background: red;
+    border-radius: 50%;
+    margin: 4px auto;
+}
+
+.c10-detecting {
+    background: var(--safe);
+    box-shadow: 0 0 15px var(--safe);
+}
+
+.belt-system {
+    position: absolute;
+    left: 530px;
+    bottom: 60px;
+    width: 500px;
+    height: 50px;
+    background: var(--belt);
+    border: 4px solid #111;
+    overflow: hidden;
+    z-index: 5;
+}
+
+.belt-track {
+    width: 200%;
+    height: 100%;
+    background-image: repeating-linear-gradient(90deg, #333, #333 40px, #444 40px, #444 45px);
+}
+
+.belt-move {
+    animation: slideBelt 0.5s linear infinite;
+}
+
+@keyframes slideBelt {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-45px);
+    }
+}
+
+.sac-on-belt {
+    position: absolute;
+    width: 75px;
+    height: 36px;
+    background: var(--cement-bag);
+    border: 2px solid #a68d6d;
+    bottom: 65px;
+    left: 540px;
+    z-index: 200;
+    animation: moveCouche 4s linear forwards;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #5d4037;
+    font-weight: 700;
+    font-size: 8px;
+    border-radius: 3px;
+}
+
+@keyframes moveCouche {
+    0% {
+        left: 540px;
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    100% {
+        left: 1030px;
+    }
+}
+
+.pallet {
+    position: absolute;
+    left: 1030px;
+    bottom: 60px;
+    width: 130px;
+    height: 15px;
+    background: var(--wood);
+    border: 2px solid #5d4037;
+    z-index: 5;
+}
+
+.stacked-sac {
+    position: absolute;
+    width: 60px;
+    height: 30px;
+    background: var(--cement-bag);
+    border: 1px solid #a68d6d;
+    border-radius: 3px;
+    font-size: 7px;
+    color: #5d4037;
+    text-align: center;
+    line-height: 30px;
+    font-weight: 700;
+    z-index: 250;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.bottom-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(260px, 0.9fr);
+    gap: 10px;
+    min-height: 0;
+    /* Reserve most of the viewport for the SCADA stage; controls stay usable via scroll. */
+    max-height: min(300px, 22vh);
+    overflow-x: hidden;
+    overflow-y: auto;
+    align-content: start;
+}
+
+.controls-panel,
+.screen-panel {
+    padding: 8px;
+}
+
+.btn-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.secondary-grid {
+    margin-top: 10px;
+}
+
+.full {
+    grid-column: span 2;
+}
+
+.btn {
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 10px 8px;
+    transition: filter 0.2s, transform 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-mode {
+    background: #34495e;
+    color: #fff;
+}
+
+.btn-mode.active {
+    background: orange;
+    color: #111;
+    box-shadow: 0 0 12px orange;
+}
+
+.btn-marche {
+    background: var(--safe);
+    color: #fff;
+}
+
+.btn-arret {
+    background: #c0392b;
+    color: #fff;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+}
+
+.btn-target {
+    background: linear-gradient(120deg, #0ea5a4 0%, #2563eb 100%);
+    color: #fff;
+    white-space: nowrap;
+}
+
+.btn-secondary {
+    background: #7f8c8d;
+    color: #fff;
+}
+
+.target-panel {
+    margin-top: 10px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    border-radius: 10px;
+    background: linear-gradient(145deg, rgba(12, 19, 37, 0.9), rgba(18, 30, 57, 0.9));
+    padding: 10px;
+}
+
+.target-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #a5c7ff;
+}
+
+.target-row {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+#target-slider {
+    width: 100%;
+    accent-color: #3b82f6;
+}
+
+.target-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #cbd5e1;
+    font-size: 11px;
+}
+
+#target-input {
+    width: 76px;
+    border: 1px solid #475569;
+    border-radius: 6px;
+    background: #0b1220;
+    color: #f8fafc;
+    padding: 6px;
+    font-size: 12px;
+}
+
+.target-plc {
+    margin-top: 8px;
+    font-size: 11px;
+    color: #bfdbfe;
+}
+
+#txt-target-live {
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.defaut-panel {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    font-size: 11px;
+}
+
+.v-defaut {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    background: #555;
+    margin-right: 5px;
+    border: 1px solid #000;
+}
+
+.v-active {
+    background: red;
+    box-shadow: 0 0 8px red;
+}
+
+.screen {
+    background: #000;
+    color: #0f0;
+    padding: 8px;
+    border: 2px solid #444;
+    font-family: Consolas, monospace;
+    min-height: 140px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+}
+
+.status-wrap {
+    margin-top: 10px;
+}
+
+.status-chip {
+    display: inline-block;
+    padding: 8px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    background: #3c4a5f;
+    color: #fff;
+}
+
+.status-ok {
+    background: #205b37;
+}
+
+.status-fault {
+    background: #7e2020;
+}
+
+@media (max-width: 1100px) {
+    .bottom-layout {
+        grid-template-columns: 1fr;
+        max-height: min(480px, 38vh);
+    }
+}
+
+@media (max-width: 680px) {
+    .app-shell {
+        padding: 8px;
+        gap: 8px;
+    }
+
+    .btn-grid,
+    .defaut-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .full {
+        grid-column: auto;
+    }
+
+    .target-row {
+        grid-template-columns: 1fr;
+    }
+
+    #target-input {
+        width: 100%;
+    }
+}

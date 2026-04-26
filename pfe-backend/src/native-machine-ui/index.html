@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Les Ciments de Bizerte</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="header">
+            <h1>Automatisation d'une machine ensacheuse 8 becs</h1>
+            <small>Les Ciments de Bizerte | Interface Gateway Node.js</small>
+        </header>
+
+        <main class="main-layout">
+            <section class="factory-panel">
+                <div class="stage-wrap" id="stage-wrap">
+                    <div class="factory-viewport">
+                        <div class="factory" id="stage">
+                            <div id="worker" aria-label="Operateur">👷</div>
+
+                            <div id="packer" class="machine-hub">
+                                <div class="machine-label">Machine Ensacheuse 8 Becs</div>
+                                <div id="becs-container"></div>
+                            </div>
+
+                            <div class="capteur-c10"><div id="c10-led" class="c10-light"></div></div>
+                            <div class="belt-system"><div id="belt-anim" class="belt-track"></div></div>
+                            <div class="pallet" id="pallet"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="bottom-layout">
+                <section class="controls-panel">
+                    <div class="btn-grid">
+                        <button id="btn-mode-local" class="btn btn-mode">Mode Local</button>
+                        <button id="btn-mode-central" class="btn btn-mode">Mode Centrale</button>
+
+                        <button id="btn-marche-central" class="btn btn-marche">Marche Central</button>
+                        <button id="btn-arret-central" class="btn btn-arret">Arret Central</button>
+
+                        <button id="btn-au" class="btn btn-danger full">Declencher AU</button>
+                    </div>
+
+                    <section class="target-panel" aria-label="Consigne poids">
+                        <div class="target-title">Consigne Poids</div>
+                        <div class="target-row">
+                            <input id="target-slider" type="range" min="5" max="100" step="0.5" value="50">
+                            <div class="target-input-wrap">
+                                <input id="target-input" type="number" min="5" max="100" step="0.5" value="50">
+                                <span>kg</span>
+                            </div>
+                            <button id="btn-apply-target" type="button" class="btn btn-target">Appliquer</button>
+                        </div>
+                        <div class="target-plc">PLC: <span id="txt-target-live">50.0</span> kg</div>
+                    </section>
+
+                    <div class="defaut-panel">
+                        <div><span id="v-au" class="v-defaut"></span> AU</div>
+                        <div><span id="v-eco" class="v-defaut"></span> Ecoulement</div>
+                        <div><span id="v-mot" class="v-defaut"></span> Moteur</div>
+                        <div><span id="v-cap" class="v-defaut"></span> Capteur</div>
+                        <div><span id="v-dis" class="v-defaut"></span> Disjoncteur</div>
+                    </div>
+
+                    <div class="btn-grid secondary-grid">
+                        <button id="btn-mettre-sac" class="btn btn-secondary full">Mettre sac</button>
+                        <button id="btn-acquittement" class="btn btn-secondary">Acquittement</button>
+                        <button id="btn-clear" class="btn btn-secondary">Vider palette</button>
+                    </div>
+                </section>
+
+                <aside class="screen-panel">
+                    <div class="screen" id="main-screen">
+                        <div>&gt; SYSTEME PRET</div>
+                        <div>&gt; MODE: <span id="txt-mode">---</span></div>
+                        <div>&gt; ETAT MOTEUR: <span id="txt-state">ARRET</span></div>
+                        <div>&gt; CONSIGNE: <span id="txt-target">50.0</span> KG</div>
+                        <div>&gt; POIDS REEL: <span id="txt-weight">0.0</span> KG</div>
+                        <div>&gt; DEFAUT: <span id="txt-fault">AUCUN</span></div>
+                        <div>&gt; SACS: <span id="txt-count">0</span></div>
+                    </div>
+
+                    <div class="status-wrap">
+                        <span id="system-status" class="status-chip">PLC: DECONNECTE</span>
+                    </div>
+                </aside>
+            </section>
+        </main>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

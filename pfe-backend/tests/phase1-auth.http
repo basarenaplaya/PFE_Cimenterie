@@ -1,0 +1,64 @@
+@baseUrl = http://localhost:5000/api
+@operatorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXJuYW1lIjoib3BlcmF0b3JfMDEiLCJyb2xlIjoiT1BFUkFUT1IiLCJpYXQiOjE3NzYxMjMzOTAsImV4cCI6MTc3NjE1MjE5MH0.Je6eIUMQu_ECBFK7stnyuef011yYtG396sdyT5ZdoBA
+@adminToken = REPLACE_WITH_ADMIN_TOKEN
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Register OPERATOR user
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "operator_01",
+  "password": "StrongPass!123",
+  "full_name": "Operator One"
+}
+
+### Register ADMIN user (works only when ALLOW_ADMIN_BOOTSTRAP=true)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin_01",
+  "password": "StrongAdmin!123",
+  "full_name": "Admin One",
+  "role": "ADMIN"
+}
+
+### Login user
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "operator_01",
+  "password": "StrongPass!123"
+}
+
+### Get own profile (requires valid JWT)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{operatorToken}}
+
+### Admin probe (operator should receive 403)
+GET {{baseUrl}}/auth/admin-probe
+Authorization: Bearer {{operatorToken}}
+
+### Admin probe (admin should receive 200)
+GET {{baseUrl}}/auth/admin-probe
+Authorization: Bearer {{adminToken}}
+
+### Missing token should return 401
+GET {{baseUrl}}/auth/me
+
+### Invalid token should return 401
+GET {{baseUrl}}/auth/me
+Authorization: Bearer invalid.token.here
+
+### SQL injection attempt should fail safely
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin' OR 1=1--",
+  "password": "whatever"
+}
