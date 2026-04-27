@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-/** Legacy SCADA is static under `public/machine-scada/` (same origin as the dashboard, port 5173). */
-const MACHINE_SCADA_PATH = "/machine-scada/"
+/**
+ * Legacy SCADA lives in `public/machine-scada/index.html`.
+ * Use the explicit `index.html` path: `/machine-scada/` is caught by Vite’s SPA fallback and
+ * would load the React app inside the iframe (wrong).
+ */
+const MACHINE_SCADA_INDEX = "/machine-scada/index.html"
 const NATIVE_AUTH_MESSAGE = "pfe-native-auth"
 
 function buildScadaExternalHref(token) {
-  const base = `${typeof window !== "undefined" ? window.location.origin : ""}${MACHINE_SCADA_PATH}`
+  const base = `${typeof window !== "undefined" ? window.location.origin : ""}${MACHINE_SCADA_INDEX}`
   if (typeof token !== "string" || !token.trim()) {
     return base
   }
@@ -25,7 +29,7 @@ export default function MachineViewPage() {
   const iframeRef = useRef(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const iframeSrc = useMemo(() => MACHINE_SCADA_PATH, [])
+  const iframeSrc = useMemo(() => MACHINE_SCADA_INDEX, [])
   const externalHref = useMemo(() => buildScadaExternalHref(token ?? ""), [token])
 
   const sendAuthToIframe = useCallback(() => {
