@@ -13,8 +13,10 @@ async function startServer() {
 
     server = http.createServer(app);
     initializeSocketServer(server);
-    server.listen(env.port, () => {
-      console.log(`PFE backend running on port ${env.port} in ${env.nodeEnv} mode`);
+    server.listen(env.port, env.bindHost, () => {
+      console.log(
+        `PFE backend listening on http://${env.bindHost}:${env.port} (${env.nodeEnv})`
+      );
 
       // Keep API availability independent from PLC connectivity.
       startRealtimeEngine().catch((error) => {

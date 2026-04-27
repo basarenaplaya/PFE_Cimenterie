@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:5000/api
+@baseUrl = http://localhost:3000/api
 @adminToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjMsInVzZXJuYW1lIjoiYWRtaW5fMDEiLCJyb2xlIjoiQURNSU4iLCJpYXQiOjE3NzYxMjc0MTcsImV4cCI6MTc3NjE1NjIxN30.gvWblUNcCaE9POpZ2vVlxYmsk4J_OifJ67FEBsgilhw
 @operatorToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsInVzZXJuYW1lIjoib3BlcmF0b3JfMDEiLCJyb2xlIjoiT1BFUkFUT1IiLCJpYXQiOjE3NzYxMjc0NDAsImV4cCI6MTc3NjE1NjI0MH0.tC67149iebHB1qGWmE-57nnZbTh6V8x0-4ivy_QCKkA
 

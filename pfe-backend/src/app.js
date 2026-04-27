@@ -16,9 +16,7 @@ const { sendSuccess } = require("./utils/httpResponse");
 const app = express();
 const nativeMachineUiDir = path.join(__dirname, "native-machine-ui");
 
-const nativeUiFrameAncestors = env.corsOrigin && env.corsOrigin !== "*"
-  ? ["'self'", env.corsOrigin]
-  : ["'self'", "http://localhost:5173", "http://127.0.0.1:5173"];
+const nativeUiFrameAncestors = ["'self'", ...env.nativeUiAllowedParentOrigins];
 
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
@@ -130,10 +128,25 @@ app.use("/api/alarms", dataReadLimiter, alarmRouter);
 app.use("/api/analytics", dataReadLimiter, analyticsRouter);
 app.use("/api/machine", machineCommandLimiter, machineRouter);
 
-app.use("/machine/native", express.static(nativeMachineUiDir));
+app.get("/machine/native/embed-parent-origins.js", (_req, res) => {
+  res
+    .type("application/javascript; charset=utf-8")
+    .set("Cache-Control", "no-store")
+    .send(`window.__PFE_NATIVE_PARENT_ORIGINS__=${JSON.stringify(env.nativeUiAllowedParentOrigins)};\n`);
+});
+
 app.get("/machine/native", (_req, res) => {
   res.sendFile(path.join(nativeMachineUiDir, "index.html"));
 });
+app.get("/machine/native/", (_req, res) => {
+  res.sendFile(path.join(nativeMachineUiDir, "index.html"));
+});
+app.use(
+  "/machine/native",
+  express.static(nativeMachineUiDir, {
+    index: false,
+  })
+);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

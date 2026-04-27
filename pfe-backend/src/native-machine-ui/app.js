@@ -35,7 +35,8 @@ const DATA_KEYS = {
     defautDejoncteur: 'defaut_dejoncteur',
 };
 
-function resolveAuthToken() {
+/** Legacy: `#token=jwt` for cold-open / bookmarks (prefer dashboard embed + postMessage). */
+function resolveAuthTokenFromHash() {
     try {
         const rawHash = window.location.hash || '';
         const normalizedHash = rawHash.startsWith('#') ? rawHash.slice(1) : rawHash;
@@ -47,7 +48,71 @@ function resolveAuthToken() {
     }
 }
 
-const AUTH_TOKEN = resolveAuthToken();
+/** Populated by `/machine/native/embed-parent-origins.js` (see app.js). */
+function getAllowedParentOrigins() {
+    if (Array.isArray(window.__PFE_NATIVE_PARENT_ORIGINS__)) {
+        return window.__PFE_NATIVE_PARENT_ORIGINS__.filter((o) => typeof o === 'string' && o.length > 0);
+    }
+    return [];
+}
+
+function isParentPostMessageOriginAllowed(origin) {
+    if (typeof origin !== 'string' || !origin) {
+        return false;
+    }
+    if (getAllowedParentOrigins().includes(origin)) {
+        return true;
+    }
+    try {
+        if (document.referrer) {
+            return new URL(document.referrer).origin === origin;
+        }
+    } catch {
+        return false;
+    }
+    return false;
+}
+
+let accessToken = resolveAuthTokenFromHash();
+
+function applyAccessToken(token) {
+    const next = typeof token === 'string' && token.trim() ? token.trim() : null;
+    if (!next) {
+        return;
+    }
+    accessToken = next;
+    setupSocket();
+}
+
+let parentAuthListenerAttached = false;
+
+function registerParentAuthMessageListener() {
+    if (parentAuthListenerAttached) {
+        return;
+    }
+    parentAuthListenerAttached = true;
+    window.addEventListener('message', (event) => {
+        if (window.parent === window || !event.source || event.source !== window.parent) {
+            return;
+        }
+        if (!isParentPostMessageOriginAllowed(event.origin)) {
+            return;
+        }
+        const payload = event.data;
+        if (!payload || typeof payload !== 'object') {
+            return;
+        }
+        if (payload.type !== 'pfe-native-auth') {
+            return;
+        }
+        if (typeof payload.token !== 'string' || !payload.token.trim()) {
+            return;
+        }
+        applyAccessToken(payload.token);
+    });
+}
+
+registerParentAuthMessageListener();
 
 const state = {
     connected: false,
@@ -98,7 +163,11 @@ document.addEventListener('DOMContentLoaded', () => {
     requestAnimationFrame(() => {
         resizeStage();
     });
-    setupSocket();
+    if (accessToken) {
+        setupSocket();
+    } else {
+        log('Authentification: en attente du tableau de bord (postMessage) ou jeton URL (#token=).');
+    }
     updateUI();
 });
 
@@ -188,8 +257,26 @@ function setupSocket() {
         return;
     }
 
+    if (!accessToken) {
+        return;
+    }
+
+    if (socket) {
+        try {
+            socket.removeAllListeners();
+        } catch (_e) {
+            //
+        }
+        try {
+            socket.disconnect();
+        } catch (_e2) {
+            //
+        }
+        socket = null;
+    }
+
     socket = window.io({
-        auth: AUTH_TOKEN ? { token: AUTH_TOKEN } : undefined,
+        auth: { token: accessToken },
     });
 
     socket.on('connect', () => {
@@ -229,6 +316,10 @@ function setupSocket() {
     });
 
     socket.on('telemetry', (payload) => {
+        applyTelemetry(payload);
+    });
+
+    socket.on('telemetry_update', (payload) => {
         applyTelemetry(payload);
     });
 }
@@ -329,8 +420,8 @@ async function postMachineCommand(command, value) {
         'Content-Type': 'application/json',
     };
 
-    if (AUTH_TOKEN) {
-        headers.Authorization = `Bearer ${AUTH_TOKEN}`;
+    if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
     }
 
     const response = await fetch('/api/machine/command', {

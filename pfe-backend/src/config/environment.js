@@ -59,9 +59,31 @@ if (plcSimTargetMin <= 0 || plcSimTargetMax <= 0 || plcSimTargetMin > plcSimTarg
   throw new Error("PLC_SIM target bounds are invalid.");
 }
 
+const nativeUiParentOriginsRaw = process.env.NATIVE_UI_PARENT_ORIGINS || "";
+const nativeUiParentOrigins = nativeUiParentOriginsRaw
+  .split(",")
+  .map((s) => s.trim().replace(/\/$/, ""))
+  .filter((s) => s.length > 0);
+
+const defaultNativeParents = ["http://localhost:5173", "http://127.0.0.1:5173"];
+const corsOriginTrim = typeof process.env.CORS_ORIGIN === "string" ? process.env.CORS_ORIGIN.trim() : "";
+const nativeUiAllowedParentOrigins = [
+  ...defaultNativeParents,
+  ...(corsOriginTrim && corsOriginTrim !== "*" ? [corsOriginTrim.replace(/\/$/, "")] : []),
+  ...nativeUiParentOrigins,
+].filter((v, i, a) => a.indexOf(v) === i);
+
+const bindHostRaw = process.env.BIND_HOST;
+const bindHost =
+  typeof bindHostRaw === "string" && bindHostRaw.trim() !== ""
+    ? bindHostRaw.trim()
+    : "0.0.0.0";
+
 const env = {
   nodeEnv: process.env.NODE_ENV || "development",
-  port: toInt(process.env.PORT, 5000),
+  port: toInt(process.env.PORT, 3000),
+  /** Listen address for HTTP + Socket.IO (0.0.0.0 = all IPv4 interfaces, reachable on LAN). */
+  bindHost,
   dbHost: process.env.DB_HOST,
   dbPort: toInt(process.env.DB_PORT, 3306),
   dbUser: process.env.DB_USER,
@@ -73,6 +95,7 @@ const env = {
   bcryptSaltRounds,
   allowAdminBootstrap: toBool(process.env.ALLOW_ADMIN_BOOTSTRAP, false),
   corsOrigin: process.env.CORS_ORIGIN || "*",
+  nativeUiAllowedParentOrigins,
   plcSimulator: toBool(process.env.PLC_SIMULATOR, false),
   plcIp: process.env.PLC_IP || "127.0.0.1",
   plcPort: toInt(process.env.PLC_PORT, 102),

@@ -43,7 +43,7 @@ export function getResolvedApiBaseUrl() {
     return ""
   }
 
-  return "http://localhost:5000"
+  return "http://localhost:3000"
 }
 
 let authToken = null
@@ -155,7 +155,7 @@ export async function apiRequest(path, options = {}) {
   } catch (cause) {
     const hint =
       import.meta.env.DEV && !import.meta.env.VITE_API_BASE_URL && !import.meta.env.VITE_API_URL
-        ? " Start the backend on port 5000 (or set VITE_API_PROXY_TARGET if it uses another port)."
+        ? " Start the backend on port 3000 (or set VITE_API_PROXY_TARGET if it uses another port)."
         : " Check that the API is reachable from this device (same-origin proxy, or set VITE_API_BASE_URL to this host’s API URL)."
     throw new ApiError(`Unable to reach the server.${hint}`, {
       status: 0,
@@ -167,8 +167,14 @@ export async function apiRequest(path, options = {}) {
   const payload = await parseResponseBody(response)
 
   if (!response.ok) {
-    const message =
+    let message =
       resolvePayloadErrorMessage(payload) || response.statusText || "Request failed"
+
+    if (response.status === 502 && import.meta.env.DEV) {
+      message =
+        "Bad gateway: the dev server could not reach the API (wrong port or backend not running). " +
+        "Start pfe-backend (default PORT=3000), or set VITE_API_PROXY_TARGET to match your backend PORT."
+    }
 
     if (response.status === 401 && resolvedToken && unauthorizedHandler) {
       unauthorizedHandler()

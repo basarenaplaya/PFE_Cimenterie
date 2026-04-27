@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { ExternalLink, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
@@ -6,25 +6,64 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { getResolvedApiBaseUrl } from "@/lib/api"
 
 const MACHINE_NATIVE_PATH = "/machine/native"
+const NATIVE_AUTH_MESSAGE = "pfe-native-auth"
 
-function buildNativeMachineUrl(token) {
+/** Clean URL for iframe (auth via postMessage). */
+function buildNativeIframeSrc() {
   const base = getResolvedApiBaseUrl()
-  const hash =
-    typeof token === "string" && token.trim()
-      ? `#token=${encodeURIComponent(token)}`
-      : ""
   if (base === "") {
-    return `${MACHINE_NATIVE_PATH}${hash}`
+    return MACHINE_NATIVE_PATH
   }
-  return `${base}${MACHINE_NATIVE_PATH}${hash}`
+  return `${base}${MACHINE_NATIVE_PATH}`
+}
+
+/** External tab: legacy hash so Socket/API work without an opener postMessage. */
+function buildNativeExternalHref(token) {
+  const path = buildNativeIframeSrc()
+  if (typeof token !== "string" || !token.trim()) {
+    return path
+  }
+  return `${path}#token=${encodeURIComponent(token.trim())}`
+}
+
+function resolvePostMessageTargetOrigin() {
+  const base = getResolvedApiBaseUrl()
+  if (base === "") {
+    return window.location.origin
+  }
+  try {
+    return new URL(base).origin
+  } catch {
+    return window.location.origin
+  }
 }
 
 export default function MachineViewPage() {
   const { token } = useAuth()
-
+  const iframeRef = useRef(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const nativeMachineUrl = useMemo(() => buildNativeMachineUrl(token), [token])
+  const iframeSrc = useMemo(() => buildNativeIframeSrc(), [])
+  const externalHref = useMemo(() => buildNativeExternalHref(token ?? ""), [token])
+
+  const sendAuthToIframe = useCallback(() => {
+    const el = iframeRef.current
+    if (!el?.contentWindow || typeof token !== "string" || !token.trim()) {
+      return
+    }
+    el.contentWindow.postMessage(
+      { type: NATIVE_AUTH_MESSAGE, token: token.trim() },
+      resolvePostMessageTargetOrigin()
+    )
+  }, [token])
+
+  const handleIframeLoad = useCallback(() => {
+    sendAuthToIframe()
+  }, [sendAuthToIframe])
+
+  useEffect(() => {
+    sendAuthToIframe()
+  }, [sendAuthToIframe, refreshKey])
 
   return (
     <div className="w-full space-y-6">
@@ -41,7 +80,8 @@ export default function MachineViewPage() {
             <div>
               <CardTitle className="text-base">Live PLC Surface</CardTitle>
               <CardDescription>
-                Embedded machine panel with one-click external launch.
+                Embedded panel uses a secure handshake (no token in the URL). External opens a
+                legacy bookmark link with token for a standalone tab.
               </CardDescription>
             </div>
 
@@ -58,7 +98,7 @@ export default function MachineViewPage() {
                 variant="outline"
                 asChild
               >
-                <a href={nativeMachineUrl} target="_blank" rel="noreferrer">
+                <a href={externalHref} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-4 w-4" />
                   Open External
                 </a>
@@ -69,11 +109,13 @@ export default function MachineViewPage() {
           <CardContent className="px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
             <div className="relative min-h-[86vh] h-[calc(100vh-6.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/60">
               <iframe
+                ref={iframeRef}
                 key={refreshKey}
-                src={nativeMachineUrl}
+                src={iframeSrc}
                 title="Machine Native Interface"
                 className="block h-full w-full border-0 bg-white"
                 loading="lazy"
+                onLoad={handleIframeLoad}
               />
             </div>
           </CardContent>

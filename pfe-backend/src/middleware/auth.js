@@ -2,6 +2,8 @@ const jwt = require("jsonwebtoken");
 const { env } = require("../config/environment");
 const { HttpError } = require("../utils/httpError");
 
+const MACHINE_REALTIME_ROLES = ["ADMIN", "OPERATOR"];
+
 function extractBearerToken(authHeader) {
   if (!authHeader || typeof authHeader !== "string") {
     return null;
@@ -15,6 +17,41 @@ function extractBearerToken(authHeader) {
   return token;
 }
 
+/**
+ * Verifies a raw JWT string (Bearer body or Socket.IO `auth.token`).
+ * @returns {{ userId: string, username?: string, role: string }}
+ */
+function getAuthFromJwtString(token) {
+  if (!token || typeof token !== "string" || !token.trim()) {
+    throw new HttpError(401, "Missing or malformed authorization token.");
+  }
+
+  try {
+    const decoded = jwt.verify(token.trim(), env.jwtSecret);
+
+    if (!decoded.sub || !decoded.role) {
+      throw new HttpError(401, "Invalid token payload.");
+    }
+
+    return {
+      userId: decoded.sub,
+      username: decoded.username,
+      role: decoded.role,
+    };
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error;
+    }
+    throw new HttpError(401, "Invalid or expired token.");
+  }
+}
+
+function assertMachineRealtimeRole(auth) {
+  if (!auth || !MACHINE_REALTIME_ROLES.includes(auth.role)) {
+    throw new HttpError(403, "You do not have access to realtime telemetry.");
+  }
+}
+
 function verifyToken(req, res, next) {
   const token = extractBearerToken(req.headers.authorization);
 
@@ -23,21 +60,10 @@ function verifyToken(req, res, next) {
   }
 
   try {
-    const decoded = jwt.verify(token, env.jwtSecret);
-
-    if (!decoded.sub || !decoded.role) {
-      return next(new HttpError(401, "Invalid token payload."));
-    }
-
-    req.auth = {
-      userId: decoded.sub,
-      username: decoded.username,
-      role: decoded.role,
-    };
-
+    req.auth = getAuthFromJwtString(token);
     return next();
   } catch (error) {
-    return next(new HttpError(401, "Invalid or expired token."));
+    return next(error);
   }
 }
 
@@ -63,4 +89,8 @@ module.exports = {
   verifyToken,
   verifyAdmin,
   verifyRoles,
+  extractBearerToken,
+  getAuthFromJwtString,
+  assertMachineRealtimeRole,
+  MACHINE_REALTIME_ROLES,
 };

@@ -1,4 +1,4 @@
-@baseUrl = http://localhost:5000/api
+@baseUrl = http://localhost:3000/api
 @adminToken = REPLACE_WITH_ADMIN_TOKEN
 @operatorToken = REPLACE_WITH_OPERATOR_TOKEN
 @userId = REPLACE_WITH_CREATED_USER_ID
