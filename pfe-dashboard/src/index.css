@@ -154,7 +154,7 @@
   }
 
   .status-strip-safe {
-    bottom: calc(env(safe-area-inset-bottom, 0px) + 4.9rem);
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 6.75rem);
   }
 
   .quick-nav-safe {

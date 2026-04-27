@@ -5,7 +5,6 @@ import {
   Monitor,
   Package,
   User,
-  Settings,
   Users,
   Wrench,
 } from "lucide-react"
@@ -20,6 +19,14 @@ export const dashboardNavigation = [
     eyebrow: "Overview",
     title: "Main Dashboard",
     roles: ["ADMIN"],
+  },
+  {
+    name: "Machine View",
+    icon: Monitor,
+    to: "/machine-view",
+    eyebrow: "Machine",
+    title: "PLC Native Control",
+    roles: BASE_ROLES,
   },
   {
     name: "Production",
@@ -38,28 +45,12 @@ export const dashboardNavigation = [
     roles: ["ADMIN"],
   },
   {
-    name: "Settings",
-    icon: Settings,
-    to: "/settings",
-    eyebrow: "Settings",
-    title: "Dashboard Settings",
+    name: "Camera",
+    icon: Camera,
+    to: "/admin/cameras",
+    eyebrow: "Administration",
+    title: "Camera Configuration",
     roles: ["ADMIN"],
-  },
-  {
-    name: "Machine View",
-    icon: Monitor,
-    to: "/machine-view",
-    eyebrow: "Machine",
-    title: "PLC Native Control",
-    roles: BASE_ROLES,
-  },
-  {
-    name: "Profile",
-    icon: User,
-    to: "/profile",
-    eyebrow: "Profile",
-    title: "User Profile",
-    roles: BASE_ROLES,
   },
   {
     name: "User Management",
@@ -70,20 +61,20 @@ export const dashboardNavigation = [
     roles: ["ADMIN"],
   },
   {
-    name: "Camera Config",
-    icon: Camera,
-    to: "/admin/cameras",
-    eyebrow: "Administration",
-    title: "Camera Configuration",
-    roles: ["ADMIN"],
-  },
-  {
-    name: "Audit Logs",
+    name: "Audit Log",
     icon: ClipboardList,
     to: "/admin/logs",
     eyebrow: "Administration",
     title: "System Audit Logs",
     roles: ["ADMIN"],
+  },
+  {
+    name: "Profile",
+    icon: User,
+    to: "/profile",
+    eyebrow: "Profile",
+    title: "User Profile",
+    roles: BASE_ROLES,
   },
 ]
 
@@ -93,8 +84,13 @@ export function getNavigationByRole(role) {
 }
 
 export function getRouteMeta(pathname) {
-  return (
-    dashboardNavigation.find((item) => pathname.startsWith(item.to)) ??
-    dashboardNavigation[0]
-  )
+  const adminPaths = dashboardNavigation
+    .filter((item) => item.to.startsWith("/admin"))
+    .sort((a, b) => b.to.length - a.to.length)
+
+  const match =
+    adminPaths.find((item) => pathname.startsWith(item.to)) ||
+    dashboardNavigation.find((item) => pathname.startsWith(item.to))
+
+  return match ?? dashboardNavigation[0]
 }

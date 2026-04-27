@@ -94,7 +94,7 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-2 sm:gap-6">
-        <div className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 dark:border-slate-800 dark:bg-slate-900 sm:gap-3 sm:px-3 sm:py-1.5">
+        <div className="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-slate-100 px-2 py-1 dark:border-slate-800 dark:bg-slate-900 sm:gap-3 sm:px-3 sm:py-1.5 md:flex">
           <div className="relative flex h-3 w-3">
             {currentMode === "OFFLINE" ? (
               <span className="relative inline-flex h-3 w-3 rounded-full bg-amber-500 shadow-[0_0_12px] shadow-amber-500/50" />
@@ -125,7 +125,7 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative hidden rounded-full sm:inline-flex">
+          <Button variant="ghost" size="icon" className="relative inline-flex rounded-full">
             <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950" />
             <Bell className="h-5 w-5" />
           </Button>

@@ -251,10 +251,10 @@ export default function CameraConfigPage() {
         </p>
       </section>
 
-      <Tabs defaultValue="configure" className="dashboard-enter space-y-4" style={{ animationDelay: "120ms" }}>
+      <Tabs defaultValue="watch" className="dashboard-enter space-y-4" style={{ animationDelay: "120ms" }}>
         <TabsList className="w-full justify-start sm:w-auto">
-          <TabsTrigger value="configure">Configure</TabsTrigger>
           <TabsTrigger value="watch">Watch</TabsTrigger>
+          <TabsTrigger value="configure">Configure</TabsTrigger>
         </TabsList>
 
         <TabsContent value="watch" className="mt-0 outline-none">

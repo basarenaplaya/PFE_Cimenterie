@@ -12,7 +12,6 @@ import { useAuth } from "@/hooks/useAuth"
 const OverviewPage = lazy(() => import("./pages/OverviewPage"))
 const ProductionPage = lazy(() => import("./pages/ProductionPage"))
 const MaintenancePage = lazy(() => import("./pages/MaintenancePage"))
-const SettingsPage = lazy(() => import("./pages/SettingsPage"))
 const LoginPage = lazy(() => import("./pages/LoginPage"))
 const UnauthorizedPage = lazy(() => import("./pages/UnauthorizedPage"))
 const UserManagementPage = lazy(() => import("./pages/UserManagementPage"))
@@ -64,7 +63,6 @@ function App() {
                     <Route path="/overview" element={<OverviewPage />} />
                     <Route path="/production" element={<ProductionPage />} />
                     <Route path="/maintenance" element={<MaintenancePage />} />
-                    <Route path="/settings" element={<SettingsPage />} />
                   </Route>
 
                   <Route
