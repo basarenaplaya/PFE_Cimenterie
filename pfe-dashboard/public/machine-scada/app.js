@@ -48,17 +48,22 @@ function resolveAuthTokenFromHash() {
     }
 }
 
-/** Populated by `/machine/native/embed-parent-origins.js` (see app.js). */
+/** Optional origins from dashboard postMessage (parentOrigins). */
+let postMessageParentOrigins = [];
+
 function getAllowedParentOrigins() {
-    if (Array.isArray(window.__PFE_NATIVE_PARENT_ORIGINS__)) {
-        return window.__PFE_NATIVE_PARENT_ORIGINS__.filter((o) => typeof o === 'string' && o.length > 0);
-    }
-    return [];
+    const fromGlobal = Array.isArray(window.__PFE_NATIVE_PARENT_ORIGINS__)
+        ? window.__PFE_NATIVE_PARENT_ORIGINS__.filter((o) => typeof o === 'string' && o.length > 0)
+        : [];
+    return [...fromGlobal, ...postMessageParentOrigins];
 }
 
 function isParentPostMessageOriginAllowed(origin) {
     if (typeof origin !== 'string' || !origin) {
         return false;
+    }
+    if (origin === window.location.origin) {
+        return true;
     }
     if (getAllowedParentOrigins().includes(origin)) {
         return true;
@@ -104,6 +109,11 @@ function registerParentAuthMessageListener() {
         }
         if (payload.type !== 'pfe-native-auth') {
             return;
+        }
+        if (Array.isArray(payload.parentOrigins)) {
+            postMessageParentOrigins = payload.parentOrigins.filter(
+                (o) => typeof o === 'string' && o.length > 0
+            );
         }
         if (typeof payload.token !== 'string' || !payload.token.trim()) {
             return;

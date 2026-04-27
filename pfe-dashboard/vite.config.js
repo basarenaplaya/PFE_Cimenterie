@@ -25,7 +25,7 @@ function probePortOpen(port) {
 }
 
 /**
- * Resolves where Vite should proxy /api, /socket.io, /machine.
+ * Resolves where Vite should proxy /api and /socket.io.
  * If VITE_API_PROXY_TARGET is unset, probe 3000 then 5000 so older PORT=5000 backends still work.
  */
 async function resolveApiProxyTarget() {
@@ -65,10 +65,6 @@ export default defineConfig(async () => {
       target: apiProxyTarget,
       changeOrigin: true,
       ws: true,
-    },
-    "/machine": {
-      target: apiProxyTarget,
-      changeOrigin: true,
     },
   }
 

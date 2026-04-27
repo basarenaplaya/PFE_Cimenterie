@@ -3,39 +3,21 @@ import { ExternalLink, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/useAuth"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { getResolvedApiBaseUrl } from "@/lib/api"
 
-const MACHINE_NATIVE_PATH = "/machine/native"
+/** Legacy SCADA is static under `public/machine-scada/` (same origin as the dashboard, port 5173). */
+const MACHINE_SCADA_PATH = "/machine-scada/"
 const NATIVE_AUTH_MESSAGE = "pfe-native-auth"
 
-/** Clean URL for iframe (auth via postMessage). */
-function buildNativeIframeSrc() {
-  const base = getResolvedApiBaseUrl()
-  if (base === "") {
-    return MACHINE_NATIVE_PATH
-  }
-  return `${base}${MACHINE_NATIVE_PATH}`
-}
-
-/** External tab: legacy hash so Socket/API work without an opener postMessage. */
-function buildNativeExternalHref(token) {
-  const path = buildNativeIframeSrc()
+function buildScadaExternalHref(token) {
+  const base = `${typeof window !== "undefined" ? window.location.origin : ""}${MACHINE_SCADA_PATH}`
   if (typeof token !== "string" || !token.trim()) {
-    return path
+    return base
   }
-  return `${path}#token=${encodeURIComponent(token.trim())}`
+  return `${base}#token=${encodeURIComponent(token.trim())}`
 }
 
-function resolvePostMessageTargetOrigin() {
-  const base = getResolvedApiBaseUrl()
-  if (base === "") {
-    return window.location.origin
-  }
-  try {
-    return new URL(base).origin
-  } catch {
-    return window.location.origin
-  }
+function postMessageTargetOrigin() {
+  return typeof window !== "undefined" ? window.location.origin : "*"
 }
 
 export default function MachineViewPage() {
@@ -43,17 +25,23 @@ export default function MachineViewPage() {
   const iframeRef = useRef(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
-  const iframeSrc = useMemo(() => buildNativeIframeSrc(), [])
-  const externalHref = useMemo(() => buildNativeExternalHref(token ?? ""), [token])
+  const iframeSrc = useMemo(() => MACHINE_SCADA_PATH, [])
+  const externalHref = useMemo(() => buildScadaExternalHref(token ?? ""), [token])
 
   const sendAuthToIframe = useCallback(() => {
     const el = iframeRef.current
     if (!el?.contentWindow || typeof token !== "string" || !token.trim()) {
       return
     }
+    const parentOrigins =
+      typeof window !== "undefined" && window.location?.origin ? [window.location.origin] : []
     el.contentWindow.postMessage(
-      { type: NATIVE_AUTH_MESSAGE, token: token.trim() },
-      resolvePostMessageTargetOrigin()
+      {
+        type: NATIVE_AUTH_MESSAGE,
+        token: token.trim(),
+        parentOrigins,
+      },
+      postMessageTargetOrigin()
     )
   }, [token])
 
@@ -70,7 +58,8 @@ export default function MachineViewPage() {
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Machine View</h2>
         <p className="text-sm text-slate-600 dark:text-slate-300">
-          Edge-to-edge native SCADA surface hosted by the secured backend.
+          Live PLC surface is served with the dashboard (same host/port); the API and PLC logic stay
+          on the backend.
         </p>
       </section>
 
@@ -80,8 +69,8 @@ export default function MachineViewPage() {
             <div>
               <CardTitle className="text-base">Live PLC Surface</CardTitle>
               <CardDescription>
-                Embedded panel uses a secure handshake (no token in the URL). External opens a
-                legacy bookmark link with token for a standalone tab.
+                Embedded SCADA uses a postMessage handshake (no token in the iframe URL). External
+                tab keeps an optional legacy hash for standalone access.
               </CardDescription>
             </div>
 
