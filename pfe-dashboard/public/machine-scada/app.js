@@ -1,7 +1,4 @@
-const STAGE_WIDTH = 1280;
-const STAGE_HEIGHT = 720;
-/** Upscale cap: SCADA stage must dominate the viewport; CSS graphics tolerate high scale. */
-const MAX_STAGE_SCALE = 6;
+/** Fluid scene layout — scaling handled in CSS (responsive grid + hub rotation). */
 const DEFAULT_TARGET_WEIGHT_KG = 50;
 const MIN_TARGET_WEIGHT_KG = 5;
 const MAX_TARGET_WEIGHT_KG = 100;
@@ -182,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function cacheDom() {
-    dom.stageWrap = document.getElementById('stage-wrap');
+    dom.stageWrap = document.getElementById('stage');
     dom.packer = document.getElementById('packer');
     dom.belt = document.getElementById('belt-anim');
     dom.worker = document.getElementById('worker');
@@ -215,20 +212,21 @@ function cacheDom() {
     dom.btnClear = document.getElementById('btn-clear');
     dom.btnApplyTarget = document.getElementById('btn-apply-target');
     dom.targetInput = document.getElementById('target-input');
-    dom.targetSlider = document.getElementById('target-slider');
 }
 
 function buildSpouts() {
+    if (!dom.becsContainer) return;
+
     dom.becsContainer.innerHTML = '';
 
     for (let i = 0; i < 8; i++) {
         const bec = document.createElement('div');
         bec.className = 'bec-unit';
-        bec.style.transform = `rotate(${i * 45}deg)`;
+        bec.style.transform = `rotate(${i * 45}deg) translateY(calc(-1 * var(--bec-rim)))`;
         bec.innerHTML = `
             <div class="spout-id">${i + 1}</div>
             <div class="presence-voyant" id="pv-${i}"></div>
-            <div class="weight-display-bec" id="wd-${i}">0.0kg</div>
+            <div class="weight-display-bec" id="mini-wd-${i}">0.0</div>
             <div class="valve" id="v-${i}"></div>
             <div class="sac-realist" id="sm-${i}">
                 <div class="cement-fill" id="fill-${i}"></div>
@@ -236,6 +234,39 @@ function buildSpouts() {
         `;
 
         dom.becsContainer.appendChild(bec);
+    }
+}
+
+function updateSpoutCardAppearance(index) {
+    const card = document.getElementById(`spout-card-${index}`);
+    const bag = state.bags[index];
+    if (!card || !bag) return;
+
+    const target = clampTargetWeight(state.targetWeight);
+
+    card.classList.remove('spout-card--empty', 'spout-card--present', 'spout-card--filling', 'spout-card--full');
+
+    if (!bag.occupied) {
+        card.classList.add('spout-card--empty');
+        return;
+    }
+
+    if (bag.readyToDrop || bag.weight >= target * 0.98) {
+        card.classList.add('spout-card--full');
+        return;
+    }
+
+    if (bag.trackingLive || (bag.weight > 0 && bag.weight < target)) {
+        card.classList.add('spout-card--filling');
+        return;
+    }
+
+    card.classList.add('spout-card--present');
+}
+
+function updateAllSpoutCards() {
+    for (let i = 0; i < 8; i++) {
+        updateSpoutCardAppearance(i);
     }
 }
 
@@ -250,14 +281,9 @@ function bindEvents() {
     dom.btnClear.addEventListener('click', clearPallet);
     dom.btnApplyTarget.addEventListener('click', applyTargetWeight);
 
-    dom.targetSlider.addEventListener('input', () => {
-        const value = clampTargetWeight(asNumber(dom.targetSlider.value));
-        dom.targetInput.value = value.toFixed(1);
-    });
-
-    dom.targetInput.addEventListener('input', () => {
+    dom.targetInput.addEventListener('change', () => {
         const value = clampTargetWeight(asNumber(dom.targetInput.value));
-        dom.targetSlider.value = String(value);
+        dom.targetInput.value = value.toFixed(1);
     });
 }
 
@@ -335,13 +361,7 @@ function setupSocket() {
 }
 
 function resizeStage() {
-    const rect = dom.stageWrap.getBoundingClientRect();
-    const gutter = 4;
-    const availableWidth = Math.max(280, rect.width - gutter * 2);
-    const availableHeight = Math.max(200, rect.height - gutter * 2);
-    const fitScale = Math.min(availableWidth / STAGE_WIDTH, availableHeight / STAGE_HEIGHT);
-    const scale = Math.min(Math.max(fitScale, 0.05), MAX_STAGE_SCALE);
-    document.documentElement.style.setProperty('--stage-scale', String(scale));
+    document.documentElement.style.removeProperty('--stage-scale');
 }
 
 async function setMode(mode) {
@@ -370,6 +390,11 @@ async function marcheCentral() {
 }
 
 async function arretCentral() {
+    if (!state.modeCentral || state.modeLocal) {
+        log('Commande ARRET bloquee: mode non CENTRAL');
+        return;
+    }
+
     try {
         await postMachineCommand(COMMANDS.arret);
         log('Commande ARRET CENTRAL envoyee');
@@ -408,7 +433,6 @@ async function mettreSac() {
 async function applyTargetWeight() {
     const value = clampTargetWeight(asNumber(dom.targetInput.value));
     dom.targetInput.value = value.toFixed(1);
-    dom.targetSlider.value = String(value);
 
     try {
         await postMachineCommand(COMMANDS.targetWeight, Number(value.toFixed(1)));
@@ -570,12 +594,11 @@ function parsePlcSpoutIndex(value) {
 
 function syncTargetControlsFromPlc() {
     const active = document.activeElement;
-    if (active === dom.targetInput || active === dom.targetSlider) {
+    if (active === dom.targetInput) {
         return;
     }
 
     dom.targetInput.value = state.targetWeight.toFixed(1);
-    dom.targetSlider.value = String(state.targetWeight);
 }
 
 function syncActiveSpoutFromPlc(plcSpoutIndex) {
@@ -610,22 +633,23 @@ function syncActiveSpoutFromPlc(plcSpoutIndex) {
     }
 
     showSpoutBag(plcSpoutIndex, true);
-    drawBagWeight(plcSpoutIndex, bag.weight);
 }
 
 function showSpoutBag(index, valveOn) {
-    document.getElementById(`pv-${index}`).classList.add('presence-active');
+    const pv = document.getElementById(`pv-${index}`);
     const sac = document.getElementById(`sm-${index}`);
-    const display = document.getElementById(`wd-${index}`);
     const valve = document.getElementById(`v-${index}`);
+    const mini = document.getElementById(`mini-wd-${index}`);
 
+    if (pv) pv.classList.add('presence-active');
     if (sac) sac.style.display = 'block';
-    if (display) display.style.display = 'block';
-    if (valveOn) {
-        valve.classList.add('valve-on');
-    } else {
-        valve.classList.remove('valve-on');
+    if (mini) mini.style.display = 'block';
+    if (valve) {
+        valve.classList.toggle('valve-on', Boolean(valveOn));
     }
+
+    drawBagWeight(index, state.bags[index]?.weight ?? state.liveWeight);
+    updateSpoutCardAppearance(index);
 }
 
 function markBagReadyForDrop(index) {
@@ -637,7 +661,9 @@ function markBagReadyForDrop(index) {
     bag.snapshotWeight = bag.weight > 0 ? bag.weight : state.liveWeight;
     bag.trackingLive = false;
     bag.readyToDrop = true;
-    document.getElementById(`v-${index}`).classList.remove('valve-on');
+    const valve = document.getElementById(`v-${index}`);
+    if (valve) valve.classList.remove('valve-on');
+    updateSpoutCardAppearance(index);
 }
 
 function processProducedCounter(nextCounter) {
@@ -675,18 +701,27 @@ function flushPendingDrops() {
 
 function drawBagWeight(index, weight) {
     const display = document.getElementById(`wd-${index}`);
-    const fill = document.getElementById(`fill-${index}`);
+    const mini = document.getElementById(`mini-wd-${index}`);
+    const cardFill = document.getElementById(`cfill-${index}`);
+    const cementFill = document.getElementById(`fill-${index}`);
     const target = clampTargetWeight(state.targetWeight);
 
     if (display) {
-        display.style.display = 'block';
-        display.textContent = `${weight.toFixed(1)}kg`;
+        display.textContent = weight.toFixed(1);
+    }
+    if (mini) {
+        mini.textContent = weight.toFixed(1);
     }
 
-    if (fill) {
-        const pct = Math.min((weight / target) * 100, 100);
-        fill.style.height = `${pct}%`;
+    const pct = Math.min((weight / target) * 100, 100);
+    if (cardFill) {
+        cardFill.style.height = `${pct}%`;
     }
+    if (cementFill) {
+        cementFill.style.height = `${pct}%`;
+    }
+
+    updateSpoutCardAppearance(index);
 }
 
 function performDrop(index) {
@@ -711,7 +746,8 @@ function performDrop(index) {
     const movingBag = document.createElement('div');
     movingBag.className = 'sac-on-belt';
     movingBag.textContent = `${finalWeight.toFixed(1)}KG`;
-    document.getElementById('stage').appendChild(movingBag);
+    const transportHost = document.getElementById('transport-root') || document.getElementById('stage');
+    transportHost.appendChild(movingBag);
 
     window.setTimeout(() => {
         dom.c10.classList.remove('c10-detecting');
@@ -721,17 +757,28 @@ function performDrop(index) {
 }
 
 function clearSpoutVisual(index) {
-    document.getElementById(`pv-${index}`).classList.remove('presence-active');
+    const pv = document.getElementById(`pv-${index}`);
     const sac = document.getElementById(`sm-${index}`);
     const display = document.getElementById(`wd-${index}`);
-    const fill = document.getElementById(`fill-${index}`);
+    const mini = document.getElementById(`mini-wd-${index}`);
+    const cardFill = document.getElementById(`cfill-${index}`);
+    const cementFill = document.getElementById(`fill-${index}`);
+    const valve = document.getElementById(`v-${index}`);
+
+    if (pv) pv.classList.remove('presence-active');
     if (sac) sac.style.display = 'none';
-    if (display) {
-        display.style.display = 'none';
-        display.textContent = '0.0kg';
+    if (mini) {
+        mini.textContent = '0.0';
+        mini.style.display = 'none';
     }
-    if (fill) fill.style.height = '0%';
-    document.getElementById(`v-${index}`).classList.remove('valve-on');
+    if (display) {
+        display.textContent = '0.0';
+    }
+    if (cardFill) cardFill.style.height = '0%';
+    if (cementFill) cementFill.style.height = '0%';
+    if (valve) valve.classList.remove('valve-on');
+
+    updateSpoutCardAppearance(index);
 }
 
 function addToPallet(weight) {
@@ -742,10 +789,12 @@ function addToPallet(weight) {
     const layer = Math.floor((state.sacCount - 1) / 2);
     const side = (state.sacCount - 1) % 2;
 
-    stackedBag.style.bottom = `${75 + layer * 12}px`;
-    stackedBag.style.left = `${1035 + side * 62 + layer * 4}px`;
+    stackedBag.style.bottom = `${10 + layer * 14}px`;
+    stackedBag.style.left = `${44 + side * 28 + layer * 2}%`;
+    stackedBag.style.transform = `translateX(${layer * 6}px)`;
 
-    document.getElementById('stage').appendChild(stackedBag);
+    const palletHost = document.querySelector('.pallet-wrap') || document.getElementById('stage');
+    palletHost.appendChild(stackedBag);
 }
 
 function applyMotionFromState() {
@@ -784,7 +833,7 @@ function updateUI() {
     dom.btnModeLocal.disabled = !state.connected;
     dom.btnModeCentral.disabled = !state.connected;
     dom.btnMarcheCentral.disabled = !state.connected || !state.modeCentral || state.modeLocal;
-    dom.btnArretCentral.disabled = !state.connected;
+    dom.btnArretCentral.disabled = !state.connected || !state.modeCentral || state.modeLocal;
     dom.btnMettreSac.disabled = !state.connected;
     dom.btnAcquittement.disabled = !state.connected;
     dom.btnAu.disabled = !state.connected;
@@ -807,6 +856,8 @@ function updateUI() {
         dom.systemStatus.classList.remove('status-fault');
         dom.systemStatus.classList.add('status-ok');
     }
+
+    updateAllSpoutCards();
 }
 
 function animateWorker() {
@@ -822,7 +873,8 @@ function handlePostError(error, commandLabel) {
 
 function log(message) {
     const line = document.createElement('div');
-    line.textContent = `> ${message}`;
+    line.className = 'screen-line screen-line--event';
+    line.textContent = message;
     dom.screen.appendChild(line);
     dom.screen.scrollTop = dom.screen.scrollHeight;
 }

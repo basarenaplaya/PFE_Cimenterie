@@ -67,6 +67,9 @@ export default defineConfig(async ({ mode }) => {
     },
   }
 
+  /** Localtunnel / similar tunnels — Host header must be allowed or Vite blocks the request */
+  const tunnelHosts = ["pfe-cimenterie.loca.lt", ".loca.lt"]
+
   return {
     plugins: [react(), tailwindcss()],
     resolve: {
@@ -79,9 +82,11 @@ export default defineConfig(async ({ mode }) => {
       port: 5173,
       strictPort: true,
       proxy: devProxy,
+      allowedHosts: tunnelHosts,
     },
     preview: {
       proxy: devProxy,
+      allowedHosts: tunnelHosts,
     },
   }
 })

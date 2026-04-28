@@ -100,13 +100,13 @@ export default function MachineViewPage() {
           </CardHeader>
 
           <CardContent className="px-4 pb-4 pt-0 sm:px-5 sm:pb-5">
-            <div className="relative min-h-[86vh] h-[calc(100vh-6.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white/90 dark:border-slate-700 dark:bg-slate-950/60">
+            <div className="relative h-[min(92vh,calc(100vh-9rem))] min-h-[52vh] w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-950/90 dark:border-slate-700">
               <iframe
                 ref={iframeRef}
                 key={refreshKey}
                 src={iframeSrc}
                 title="Machine Native Interface"
-                className="block h-full w-full border-0 bg-white"
+                className="block h-full min-h-0 w-full border-0 bg-transparent"
                 loading="lazy"
                 onLoad={handleIframeLoad}
               />
