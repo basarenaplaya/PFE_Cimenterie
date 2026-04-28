@@ -1,5 +1,17 @@
 # React + Vite
 
+## Dev API proxy (LAN login)
+
+The app calls `/api` on the same origin; Vite proxies to **loopback** on the PC running `npm run dev`. Phones on Wi‑Fi open `http://<PC-LAN-IP>:5173` — they must not use `localhost` on the device.
+
+1. Start **pfe-backend** first (e.g. `PORT=5000`).
+2. Ensure `.env.development` sets `VITE_API_PROXY_TARGET` to match that port (see `.env.development.example`).
+3. Run **`npm run dev`**. If the backend starts **after** Vite, **restart** `npm run dev` so the proxy matches a listening API.
+
+If login shows “Bad gateway”, the proxy target did not match the backend when Vite started — align `VITE_API_PROXY_TARGET` and restart the dev server.
+
+---
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

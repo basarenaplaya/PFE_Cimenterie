@@ -1,6 +1,6 @@
 import { createConnection } from "node:net"
 import { fileURLToPath, URL } from "url"
-import { defineConfig } from "vite"
+import { defineConfig, loadEnv } from "vite"
 import react from "@vitejs/plugin-react"
 import tailwindcss from "@tailwindcss/vite"
 
@@ -25,34 +25,33 @@ function probePortOpen(port) {
 }
 
 /**
- * Resolves where Vite should proxy /api and /socket.io.
- * If VITE_API_PROXY_TARGET is unset, probe 3000 then 5000 so older PORT=5000 backends still work.
+ * Resolves where Vite should proxy /api and /socket.io (fixed at dev server startup).
+ * Prefer VITE_API_PROXY_TARGET from `.env.development` / `.env.development.local` (see loadEnv).
+ * Otherwise probe common backend ports (5000 first for this project), then default safely.
  */
-async function resolveApiProxyTarget() {
-  const explicit = process.env.VITE_API_PROXY_TARGET?.trim().replace(/\/$/, "")
+async function resolveApiProxyTarget(env) {
+  const explicit = env.VITE_API_PROXY_TARGET?.trim().replace(/\/$/, "")
   if (explicit) {
     return explicit
+  }
+  if (await probePortOpen(5000)) {
+    return `http://${PROBE_HOST}:5000`
   }
   if (await probePortOpen(3000)) {
     return `http://${PROBE_HOST}:3000`
   }
-  if (await probePortOpen(5000)) {
-    // eslint-disable-next-line no-console -- dev-only startup hint
-    console.warn(
-      "[vite] API found on port 5000; using that for proxy. Prefer PORT=3000 on the backend or set VITE_API_PROXY_TARGET."
-    )
-    return `http://${PROBE_HOST}:5000`
-  }
   // eslint-disable-next-line no-console -- dev-only startup hint
   console.warn(
-    "[vite] No API listening on 127.0.0.1:3000 or :5000 — proxy may return 502 until pfe-backend is started."
+    "[vite] No API on 127.0.0.1:5000 or :3000 at startup — defaulting proxy to :5000. " +
+      "Start pfe-backend first, then restart `npm run dev`, or set VITE_API_PROXY_TARGET in .env.development."
   )
-  return `http://${PROBE_HOST}:3000`
+  return `http://${PROBE_HOST}:5000`
 }
 
 // https://vite.dev/config/
-export default defineConfig(async () => {
-  const apiProxyTarget = await resolveApiProxyTarget()
+export default defineConfig(async ({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), "")
+  const apiProxyTarget = await resolveApiProxyTarget(env)
   // eslint-disable-next-line no-console -- dev-only startup hint
   console.info(`[vite] Dev proxy -> ${apiProxyTarget}`)
 
