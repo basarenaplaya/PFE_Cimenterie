@@ -22,6 +22,15 @@ function roundMoney2(n) {
   return Math.round(n * 100) / 100;
 }
 
+const SPOUT_COUNT = 8;
+
+function roundAvgGiveawayKg(n) {
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+  return Math.round(n * 1000) / 1000;
+}
+
 async function getTodayKpis() {
   const { start, end } = getTodayUtcWindow();
 
@@ -112,7 +121,56 @@ async function getTodayProductionChart() {
   };
 }
 
+async function getTodaySpoutGiveawayChart() {
+  const { start, end } = getTodayUtcWindow();
+
+  const rows = await executeQuery(
+    `SELECT
+       spout_id,
+       AVG(giveaway) AS avg_giveaway,
+       COUNT(*) AS bags_filled
+     FROM production_logs
+     WHERE created_at >= ? AND created_at < ?
+     GROUP BY spout_id
+     ORDER BY spout_id ASC`,
+    [start, end]
+  );
+
+  const bySpout = new Map();
+  for (const row of rows) {
+    const id = Number(row.spout_id);
+    if (!Number.isFinite(id)) {
+      continue;
+    }
+    bySpout.set(id, {
+      spout_id: id,
+      label: `Bec ${id}`,
+      avg_giveaway: roundAvgGiveawayKg(Number(row.avg_giveaway || 0)),
+      bags_filled: Number(row.bags_filled || 0),
+    });
+  }
+
+  const points = [];
+  for (let spoutId = 1; spoutId <= SPOUT_COUNT; spoutId += 1) {
+    points.push(
+      bySpout.get(spoutId) || {
+        spout_id: spoutId,
+        label: `Bec ${spoutId}`,
+        avg_giveaway: 0,
+        bags_filled: 0,
+      }
+    );
+  }
+
+  return {
+    window_start_utc: start.toISOString(),
+    window_end_utc: end.toISOString(),
+    points,
+  };
+}
+
 module.exports = {
   getTodayKpis,
   getTodayProductionChart,
+  getTodaySpoutGiveawayChart,
 };

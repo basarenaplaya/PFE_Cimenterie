@@ -54,6 +54,10 @@ Content-Type: application/json
   "price_per_ton_tnd": 275.5
 }
 
+### Per-spout avg giveaway today UTC (admin only; 8 points for Recharts)
+GET {{baseUrl}}/analytics/spout-giveaway-today
+Authorization: Bearer {{adminToken}}
+
 ### SQLi-style spout_id attempt should fail validation (400)
 GET {{baseUrl}}/production?spout_id=1%20OR%201=1
 Authorization: Bearer {{adminToken}}

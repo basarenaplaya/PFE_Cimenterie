@@ -117,3 +117,16 @@ export async function patchAnalyticsPricing({ price_per_ton_tnd }) {
   const { data } = resolvePayload(payload)
   return typeof data.price_per_ton_tnd === "number" ? data.price_per_ton_tnd : Number(data.price_per_ton_tnd)
 }
+
+export async function getAnalyticsSpoutGiveawayToday() {
+  const payload = await api.get("/api/analytics/spout-giveaway-today")
+  const { data } = resolvePayload(payload)
+  const chart = data.chart && typeof data.chart === "object" ? data.chart : null
+  return (
+    chart || {
+      window_start_utc: null,
+      window_end_utc: null,
+      points: [],
+    }
+  )
+}

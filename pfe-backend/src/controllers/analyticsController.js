@@ -3,7 +3,7 @@ const { HttpError } = require("../utils/httpError");
 const { sendSuccess } = require("../utils/httpResponse");
 const { logAuditAction } = require("../services/auditService");
 const { setPricePerTon } = require("../services/dashboardSettingsService");
-const { getTodayKpis, getTodayProductionChart } = require("../services/analyticsService");
+const { getTodayKpis, getTodayProductionChart, getTodaySpoutGiveawayChart } = require("../services/analyticsService");
 
 const getKpis = asyncHandler(async (req, res) => {
   const kpis = await getTodayKpis();
@@ -17,6 +17,16 @@ const getKpis = asyncHandler(async (req, res) => {
 
 const getProductionChart = asyncHandler(async (req, res) => {
   const chart = await getTodayProductionChart();
+
+  return sendSuccess(res, {
+    data: {
+      chart,
+    },
+  });
+});
+
+const getSpoutGiveawayToday = asyncHandler(async (req, res) => {
+  const chart = await getTodaySpoutGiveawayChart();
 
   return sendSuccess(res, {
     data: {
@@ -49,5 +59,6 @@ const patchPricing = asyncHandler(async (req, res) => {
 module.exports = {
   getKpis,
   getProductionChart,
+  getSpoutGiveawayToday,
   patchPricing,
 };
