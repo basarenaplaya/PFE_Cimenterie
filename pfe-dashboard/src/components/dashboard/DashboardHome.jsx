@@ -15,7 +15,7 @@ export function DashboardHome() {
       </section>
 
       <section
-        className="grid grid-cols-1 gap-6 xl:grid-cols-5 dashboard-enter"
+        className="grid grid-cols-1 gap-6 xl:grid-cols-5 xl:items-stretch dashboard-enter"
         style={{ animationDelay: "130ms" }}
       >
         <ProductionChart className="xl:col-span-3" />

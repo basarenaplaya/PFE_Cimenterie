@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react"
 import { motion, useReducedMotion } from "framer-motion"
-import { Activity, LockKeyhole, ShieldCheck, UserRound } from "lucide-react"
+import { LockKeyhole, ShieldCheck, UserRound } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/useAuth"
+import { APP_BRAND_NAME, APP_LOGO_SRC } from "@/lib/branding"
 
 function validateCredentials({ username, password }) {
   const errors = {}
@@ -116,11 +117,11 @@ export default function LoginPage() {
           <Card className="border-slate-200/80 bg-white/85 shadow-xl backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
             <CardHeader className="space-y-3 pb-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-600 text-white shadow-sm shadow-cyan-500/30">
-                  <Activity className="h-5 w-5" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950/80">
+                  <img src={APP_LOGO_SRC} alt="" width={40} height={40} className="h-full w-full object-contain p-0.5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900 dark:text-slate-50">Packer SCADA</CardTitle>
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-50">{APP_BRAND_NAME}</CardTitle>
                   <CardDescription className="text-slate-600 dark:text-slate-300">
                     Authenticate to access live industrial operations.
                   </CardDescription>

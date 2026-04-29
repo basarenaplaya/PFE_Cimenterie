@@ -15,6 +15,9 @@ const EMPTY_KPIS = {
   total_tonnage: 0,
   average_giveaway: 0,
   active_alarms_count: 0,
+  gross_value_tnd: 0,
+  giveaway_cost_tnd: 0,
+  price_per_ton_tnd: 250,
 }
 
 const EMPTY_CHART = {
@@ -80,6 +83,12 @@ function normalizeKpis(payload) {
     total_tonnage: Number(source.total_tonnage || 0),
     average_giveaway: Number(source.average_giveaway || 0),
     active_alarms_count: Number(source.active_alarms_count || 0),
+    gross_value_tnd: Number(source.gross_value_tnd || 0),
+    giveaway_cost_tnd: Number(source.giveaway_cost_tnd || 0),
+    price_per_ton_tnd:
+      source.price_per_ton_tnd !== undefined && source.price_per_ton_tnd !== null
+        ? Number(source.price_per_ton_tnd)
+        : 250,
   }
 }
 

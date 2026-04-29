@@ -33,13 +33,26 @@ Authorization: Bearer {{adminToken}}
 GET {{baseUrl}}/alarms?status=Unknown
 Authorization: Bearer {{adminToken}}
 
-### KPI aggregation for current day (both roles can read)
+### KPI aggregation for current day (admin only — needs ADMIN token)
+GET {{baseUrl}}/analytics/kpis
+Authorization: Bearer {{adminToken}}
+
+### KPI aggregation with operator token (should be 403 — analytics is admin-only)
 GET {{baseUrl}}/analytics/kpis
 Authorization: Bearer {{operatorToken}}
 
-### Production chart by hour for current day (both roles can read)
+### Production chart by hour for current day (admin only)
 GET {{baseUrl}}/analytics/production-chart
-Authorization: Bearer {{operatorToken}}
+Authorization: Bearer {{adminToken}}
+
+### Set price per tonne (admin only; persists in dashboard_settings)
+PATCH {{baseUrl}}/analytics/pricing
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "price_per_ton_tnd": 275.5
+}
 
 ### SQLi-style spout_id attempt should fail validation (400)
 GET {{baseUrl}}/production?spout_id=1%20OR%201=1

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useEffect } from "react"
 import { ThemeProvider } from "./components/theme-provider"
 import { DashboardLayout } from "./components/layout/DashboardLayout"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { PublicOnlyRoute } from "@/components/auth/PublicOnlyRoute"
 import { RoleBasedRoute } from "@/components/auth/RoleBasedRoute"
 import { useAuth } from "@/hooks/useAuth"
+import { APP_BRAND_NAME } from "@/lib/branding"
 
 const OverviewPage = lazy(() => import("./pages/OverviewPage"))
 const ProductionPage = lazy(() => import("./pages/ProductionPage"))
@@ -37,6 +38,10 @@ function LandingRedirect() {
 }
 
 function App() {
+  useEffect(() => {
+    document.title = APP_BRAND_NAME
+  }, [])
+
   return (
     <ThemeProvider
       attribute="class"

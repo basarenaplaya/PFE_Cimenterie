@@ -111,3 +111,9 @@ export async function listAuditLogs({ page = 1, limit = 20, action = "", userId 
     meta,
   }
 }
+
+export async function patchAnalyticsPricing({ price_per_ton_tnd }) {
+  const payload = await api.patch("/api/analytics/pricing", { price_per_ton_tnd })
+  const { data } = resolvePayload(payload)
+  return typeof data.price_per_ton_tnd === "number" ? data.price_per_ton_tnd : Number(data.price_per_ton_tnd)
+}

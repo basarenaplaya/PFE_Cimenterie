@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { AnimatePresence, motion } from "framer-motion"
-import { Loader2, StopCircle } from "lucide-react"
+import { Loader2, StopCircle, Volume2, VolumeX } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -55,6 +55,7 @@ export function CameraFocusOverlay({
   const mediaRef = useRef(null)
   const [streamReady, setStreamReady] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [videoMuted, setVideoMuted] = useState(true)
 
   const useVideo = camera?.ip_url && shouldUseVideoElement(camera.ip_url)
   const streamable = camera?.ip_url && isBrowserStreamableUrl(camera.ip_url)
@@ -62,8 +63,13 @@ export function CameraFocusOverlay({
   useEffect(() => {
     if (!open) {
       setStreamReady(false)
+      setVideoMuted(true)
     }
   }, [open])
+
+  useEffect(() => {
+    setVideoMuted(true)
+  }, [camera?.id])
 
   const handleStop = useCallback(async () => {
     const el = mediaRef.current
@@ -148,21 +154,47 @@ export function CameraFocusOverlay({
                 </p>
                 <p className="truncate text-xs text-slate-500 dark:text-slate-400">{camera.ip_url}</p>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="shrink-0 gap-1.5"
-                disabled={saving}
-                onClick={() => handleStop()}
-              >
-                {saving ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <StopCircle className="size-4 text-rose-600" />
-                )}
-                Stop
-              </Button>
+              <div className="flex shrink-0 items-center gap-2">
+                {streamable && useVideo ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="size-9 shrink-0 p-0"
+                    aria-pressed={!videoMuted}
+                    aria-label={
+                      videoMuted ? "Son coupé — activer le son" : "Son activé — couper le son"
+                    }
+                    title={
+                      videoMuted
+                        ? "Activer le son (flux vidéo uniquement, ex. MP4/WebM)"
+                        : "Couper le son"
+                    }
+                    onClick={() => setVideoMuted((m) => !m)}
+                  >
+                    {videoMuted ? (
+                      <VolumeX className="size-4" />
+                    ) : (
+                      <Volume2 className="size-4" />
+                    )}
+                  </Button>
+                ) : null}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 gap-1.5"
+                  disabled={saving}
+                  onClick={() => handleStop()}
+                >
+                  {saving ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <StopCircle className="size-4 text-rose-600" />
+                  )}
+                  Stop
+                </Button>
+              </div>
             </div>
 
             <div className="relative aspect-video w-full bg-black">
@@ -176,7 +208,7 @@ export function CameraFocusOverlay({
                   ref={mediaRef}
                   className="h-full w-full object-contain"
                   playsInline
-                  muted
+                  muted={videoMuted}
                   controls
                   crossOrigin="anonymous"
                   src={open ? camera.ip_url : undefined}

@@ -90,6 +90,8 @@ const env = {
   plcReconnectBackoffMs,
   plcSimTargetMin,
   plcSimTargetMax,
+  /** Default TND per metric tonne of product (overridable in DB + UI). */
+  pricePerTonTndDefault: toFloat(process.env.PRICE_PER_TON_TND, 250),
 };
 
 module.exports = { env };

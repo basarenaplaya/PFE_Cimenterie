@@ -68,7 +68,7 @@ export default defineConfig(async ({ mode }) => {
   }
 
   /** Localtunnel / similar tunnels — Host header must be allowed or Vite blocks the request */
-  const tunnelHosts = ["pfe-cimenterie.loca.lt", ".loca.lt"]
+  const tunnelHosts = ["pfe-cimenterie.loca.lt", ".loca.lt","salary-national-underpaid.ngrok-free.dev"]
 
   return {
     plugins: [react(), tailwindcss()],

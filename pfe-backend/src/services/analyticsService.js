@@ -1,4 +1,5 @@
 const { executeQuery } = require("../config/database");
+const { getPricePerTon } = require("./dashboardSettingsService");
 
 function getTodayUtcWindow() {
   const start = new Date();
@@ -14,14 +15,24 @@ function toHourLabel(hourIndex) {
   return `${String(hourIndex).padStart(2, "0")}:00`;
 }
 
+function roundMoney2(n) {
+  if (!Number.isFinite(n)) {
+    return 0;
+  }
+  return Math.round(n * 100) / 100;
+}
+
 async function getTodayKpis() {
   const { start, end } = getTodayUtcWindow();
 
+  // Net kg over/under (actual − target) summed for the day. For overfill-only waste cost,
+  // use SUM(GREATEST(giveaway, 0)) instead of SUM(giveaway).
   const productionRows = await executeQuery(
     `SELECT
        COUNT(*) AS total_bags_produced,
        COALESCE(SUM(weight_actual), 0) AS total_tonnage,
-       COALESCE(AVG(giveaway), 0) AS average_giveaway
+       COALESCE(AVG(giveaway), 0) AS average_giveaway,
+       COALESCE(SUM(giveaway), 0) AS total_giveaway_kg
      FROM production_logs
      WHERE created_at >= ? AND created_at < ?`,
     [start, end]
@@ -36,13 +47,23 @@ async function getTodayKpis() {
   const production = productionRows[0] || {};
   const alarms = activeAlarmsRows[0] || {};
 
+  const totalTonnageKg = Number(production.total_tonnage || 0);
+  const totalGiveawayKg = Number(production.total_giveaway_kg || 0);
+  const pricePerTonTnd = await getPricePerTon();
+  const metricTonnes = totalTonnageKg / 1000;
+  const grossValueTnd = roundMoney2(metricTonnes * pricePerTonTnd);
+  const giveawayCostTnd = roundMoney2(totalGiveawayKg * (pricePerTonTnd / 1000));
+
   return {
     window_start_utc: start.toISOString(),
     window_end_utc: end.toISOString(),
     total_bags_produced: Number(production.total_bags_produced || 0),
-    total_tonnage: Number(production.total_tonnage || 0),
+    total_tonnage: totalTonnageKg,
     average_giveaway: Number(production.average_giveaway || 0),
     active_alarms_count: Number(alarms.active_alarms_count || 0),
+    price_per_ton_tnd: roundMoney2(pricePerTonTnd),
+    gross_value_tnd: grossValueTnd,
+    giveaway_cost_tnd: giveawayCostTnd,
   };
 }
 

@@ -27,7 +27,7 @@ function DashboardLayoutContent({ children }) {
           type="button"
           aria-label="Close navigation"
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-50 bg-slate-950/45 backdrop-blur-[1px] md:hidden"
+          className="fixed inset-0 z-50 bg-slate-950/55 md:hidden"
         />
       ) : null}
       
