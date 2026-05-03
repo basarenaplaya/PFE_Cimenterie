@@ -1,6 +1,11 @@
 const { EventEmitter } = require("events");
 const { env } = require("../config/environment");
 const {
+  TELEMETRY_ALARM_KEYS,
+  describeAlarmForLog,
+  cloneTelemetryAlarmsShape,
+} = require("../constants/alarmTelemetry");
+const {
   createLog,
   initializeRealtimeCounterState,
   setCounterBaseline,
@@ -12,7 +17,7 @@ const { emitRealtimeStatus, emitTelemetryUpdate } = require("./socketService");
 const { logAuditAction } = require("./auditService");
 
 const telemetryEvents = new EventEmitter();
-const ALARM_CODES = ["js1", "js2", "js3", "js4", "js5"];
+const ALARM_CODES = TELEMETRY_ALARM_KEYS;
 
 let engineRunning = false;
 let lastObservedCounter = null;
@@ -23,17 +28,7 @@ let errorListener;
 let lastTelemetry = null;
 
 function cloneAlarms(alarms) {
-  return {
-    js1: Boolean(alarms.js1),
-    js2: Boolean(alarms.js2),
-    js3: Boolean(alarms.js3),
-    js4: Boolean(alarms.js4),
-    js5: Boolean(alarms.js5),
-  };
-}
-
-function buildAlarmDescription(code) {
-  return `PLC alarm ${code.toUpperCase()} active`;
+  return cloneTelemetryAlarmsShape(alarms);
 }
 
 async function processProductionHandshake(telemetry) {
@@ -84,7 +79,7 @@ async function processAlarmTransitions(telemetry) {
     if (!previousState && currentState) {
       await startAlarm({
         alarmCode,
-        description: buildAlarmDescription(alarmCode),
+        description: describeAlarmForLog(alarmCode),
         startTime: new Date(),
       });
     }

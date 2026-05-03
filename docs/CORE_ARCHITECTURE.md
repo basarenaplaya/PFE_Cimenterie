@@ -13,7 +13,7 @@
 │   • 1 weigh scale (analog)                                      │
 │   • 8 cement spouts (virtual)                                   │
 │   • 3-phase motor (belt, ensacheuse valve)                      │
-│   • 5 alarm lines (js1-js5)                                     │
+│   • 5 alarm bits → telemetry `Alarms`: AU, Err_1…Err_4                     │
 └─────────────────────────────────────────────────────────────────┘
                             ↕ (nodes7 S7 protocol)
 ┌─────────────────────────────────────────────────────────────────┐
@@ -81,7 +81,7 @@ Mapped via `plcService.PLC_MEMORY_MAP`:
 | `Active_Spout_ID` | INT | DB4,INT22 | 1–8 | Currently selected spout (set by PLC) |
 | `Last_Spout_ID` | INT | DB4,INT24 | 1–8 | Last completed spout (for audit) |
 | `Bags_Produced_Counter` | INT | DB4,INT26 | 0–65535 | Total bags filled this session |
-| `Alarmes` (js1–js5) | BOOL array | DB4,X2.0–X2.4 | 0/1 each | Alarm flags (latched until reset) |
+| `Alarmes` (→ `AU`, `Err_1`…`Err_4`) | BOOL | DB4,X6.6–X7.2 (see `PLC_MEMORY_MAP`) | 0/1 each | Alarm flags (latched until reset) |
 
 ---
 
@@ -102,10 +102,10 @@ Backend `plcService.normalizeTelemetry()` returns a **single payload** with two 
   angle: 67.5,                     // Derived: (active_spout - 1) * 45°
   defaut: false,                   // Any alarm active?
   arret_urgence: false,            // Emergency stop?
-  defaut_capteur: false,           // js1: Scale sensor fault
-  defaut_moteur: false,            // js2: Motor overload
-  defaut_ecoulement: false,        // js3: Cement flow fault
-  defaut_dejoncteur: false,        // js4: Disjunctor trip
+  defaut_capteur: false,           // Defaut_Capteur (PLC)
+  defaut_moteur: false,            // Defaut_Moteur (PLC)
+  defaut_ecoulement: false,        // Defaut_Ecoulement_Ciment (PLC)
+  defaut_dejoncteur: false,        // Defaut_Dejoncteur (PLC)
   Bags_Produced_Counter: 127,      // Session bag count (INT from DB4)
   _ts: 1699564800000               // Unix timestamp (ms)
 }
@@ -122,11 +122,11 @@ Backend `plcService.normalizeTelemetry()` returns a **single payload** with two 
   Machine_Mode: "CENTRAL",         // Derived: "LOCAL" | "CENTRAL" | "UNKNOWN"
   Is_Running: true,                // Derived: motor_bande || motor_ensacheuse
   Alarms: {
-    js1: false,                    // Scale sensor
-    js2: false,                    // Motor overload
-    js3: false,                    // Cement flow
-    js4: false,                    // Disjunctor
-    js5: false                     // Reserved
+    AU: false,                     // Arrêt urgence (Arret_Urgence)
+    Err_1: false,                  // Défaut écoulement ciment
+    Err_2: false,                  // Défaut capteur bande
+    Err_3: false,                  // Défaut moteur
+    Err_4: false                   // Défaut disjoncteur
   }
 }
 ```
@@ -153,7 +153,7 @@ Backend `plcService.normalizeTelemetry()` returns a **single payload** with two 
   ↓
 [realtimeEngineService.processAlarmTransitions()]
   ├─ Compare current Alarms vs previous Alarms
-  ├─ For each js1–js5 transition:
+  ├─ For each AU / Err_1…Err_4 transition:
   │  ├─ false→true: startAlarm() inserts to alarm_logs, starts duration timer
   │  └─ true→false: clearAlarm() updates alarm_logs with duration (current_ts - start_ts)
   └─ Update previousAlarms snapshot
@@ -405,9 +405,9 @@ const { machineStatus, telemetry, alarms, isConnected } = useDashboardData();
     lastUpdate: timestamp
   },
   alarms: {
-    js1: { name: "Scale Sensor", active: boolean, lastCleared: timestamp },
-    js2: { name: "Motor Overload", active: boolean, ... },
-    js3, js4, js5: { ... }
+    AU: { name: "Arrêt urgence (AU)", active: boolean, lastCleared: timestamp },
+    Err_1: { name: "Défaut écoulement ciment", active: boolean, ... },
+    Err_2, Err_3, Err_4: { ... }
   },
   isConnected: boolean,
   error: null | { code: string, message: string }
@@ -467,7 +467,7 @@ CREATE TABLE production_logs (
 ```sql
 CREATE TABLE alarm_logs (
   id INT PRIMARY KEY AUTO_INCREMENT,
-  alarm_code VARCHAR(10) (js1–js5),
+  alarm_code VARCHAR(16) (AU, Err_1…Err_4),
   started_at TIMESTAMP NOT NULL,
   cleared_at TIMESTAMP,
   duration_ms INT GENERATED ALWAYS AS (

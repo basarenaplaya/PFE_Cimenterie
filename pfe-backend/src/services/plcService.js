@@ -1,6 +1,7 @@
 const { EventEmitter } = require("events");
 const { env } = require("../config/environment");
 const { HttpError } = require("../utils/httpError");
+const { TELEMETRY_ALARM_KEYS } = require("../constants/alarmTelemetry");
 
 const PLC_MEMORY_MAP = Object.freeze({
   Poids_Reel_Web: "DB4,REAL2",
@@ -108,11 +109,11 @@ function normalizeTelemetry(values) {
     Live_Weight: weight,
     Machine_Mode: machineMode,
     Alarms: {
-      js1: au,
-      js2: defautEcoulement,
-      js3: defautCapteur,
-      js4: defautMoteur,
-      js5: defautDejoncteur,
+      AU: au,
+      Err_1: defautEcoulement,
+      Err_2: defautCapteur,
+      Err_3: defautMoteur,
+      Err_4: defautDejoncteur,
     },
   };
 }
@@ -139,7 +140,7 @@ function isDbCompatibleTelemetry(telemetry) {
     return false;
   }
 
-  for (const alarmKey of ["js1", "js2", "js3", "js4", "js5"]) {
+  for (const alarmKey of TELEMETRY_ALARM_KEYS) {
     if (typeof telemetry.Alarms[alarmKey] !== "boolean") {
       return false;
     }

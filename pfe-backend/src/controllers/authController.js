@@ -7,6 +7,7 @@ const {
   updateAuthenticatedUserPassword,
   updateAuthenticatedUserProfile,
 } = require("../services/authService");
+const { emitAdminDashboardNotification } = require("../services/socketService");
 const { sendSuccess } = require("../utils/httpResponse");
 
 const passwordPolicy = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/;
@@ -61,6 +62,18 @@ const login = asyncHandler(async (req, res) => {
     ...req.validatedBody,
     ipAddress: req.ip,
   });
+
+  try {
+    emitAdminDashboardNotification({
+      type: "login",
+      userId: payload.user.id,
+      username: payload.user.username,
+      full_name: payload.user.full_name || null,
+      at: new Date().toISOString(),
+    });
+  } catch {
+    /* non-fatal */
+  }
 
   return sendSuccess(res, {
     data: payload,

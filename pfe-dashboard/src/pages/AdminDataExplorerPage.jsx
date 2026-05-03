@@ -6,6 +6,13 @@ import { dateRangeToIsoParams, getDefaultExplorerDateRange } from "@/lib/explore
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -68,6 +75,7 @@ export default function AdminDataExplorerPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState("")
   const [isExporting, setIsExporting] = useState(false)
+  const [alarmDescriptionView, setAlarmDescriptionView] = useState(null)
 
   const dateParams = useMemo(() => dateRangeToIsoParams(appliedRange), [appliedRange])
 
@@ -596,6 +604,7 @@ export default function AdminDataExplorerPage() {
                   <TableRow>
                     <TableHead>Code</TableHead>
                     <TableHead>Description</TableHead>
+                    <TableHead className="w-[1%] whitespace-nowrap text-right">Details</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Start</TableHead>
                     <TableHead>End</TableHead>
@@ -606,8 +615,25 @@ export default function AdminDataExplorerPage() {
                   {items.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="font-mono text-xs">{row.alarm_code}</TableCell>
-                      <TableCell className="max-w-[14rem] truncate" title={row.description}>
+                      <TableCell className="max-w-56 truncate" title={row.description}>
                         {row.description}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 shrink-0 text-xs"
+                          aria-label="View full alarm description"
+                          onClick={() =>
+                            setAlarmDescriptionView({
+                              code: row.alarm_code,
+                              text: row.description || "—",
+                            })
+                          }
+                        >
+                          View
+                        </Button>
                       </TableCell>
                       <TableCell>
                         <Badge variant={row.status === "Active" ? "destructive" : "outline"}>{row.status}</Badge>
@@ -657,6 +683,27 @@ export default function AdminDataExplorerPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={alarmDescriptionView !== null}
+        onOpenChange={(open) => {
+          if (!open) setAlarmDescriptionView(null)
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Alarm {alarmDescriptionView?.code ?? ""}</DialogTitle>
+          </DialogHeader>
+          <p className="max-h-[min(60vh,24rem)] overflow-y-auto text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+            {alarmDescriptionView?.text}
+          </p>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setAlarmDescriptionView(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

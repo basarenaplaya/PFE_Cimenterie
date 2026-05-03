@@ -1,29 +1,36 @@
 const bcrypt = require("bcrypt");
 const { executeQuery } = require("../config/database");
+const { usersHasLastLoginAtColumn } = require("../config/usersTableSchema");
 const { env } = require("../config/environment");
 const { HttpError } = require("../utils/httpError");
 const { buildPaginationMeta } = require("../utils/pagination");
 const { sanitizeFields } = require("../utils/sanitize");
 const { logAuditAction } = require("./auditService");
+const { getOnlineUserIdSet, isUserOnline } = require("./presenceRegistry");
 
-function mapUser(user) {
+function mapUser(user, onlineSet) {
+  const id = Number(user.id);
   return {
-    id: user.id,
+    id,
     username: user.username,
     full_name: user.full_name,
     role: user.role,
     avatar_url: user.avatar_url,
     is_active: Boolean(user.is_active),
     created_at: user.created_at,
+    last_login_at: user.last_login_at ?? null,
+    dashboard_online: onlineSet ? onlineSet.has(id) : isUserOnline(id),
   };
 }
 
 async function findUserById(userId) {
+  const lastLoginSelect = (await usersHasLastLoginAtColumn()) ? ", last_login_at" : "";
   const rows = await executeQuery(
-    "SELECT id, username, full_name, role, avatar_url, is_active, created_at FROM users WHERE id = ? LIMIT 1",
+    `SELECT id, username, full_name, role, avatar_url, is_active, created_at${lastLoginSelect} FROM users WHERE id = ? LIMIT 1`,
     [userId]
   );
-  return rows[0] ? mapUser(rows[0]) : null;
+  const onlineSet = getOnlineUserIdSet()
+  return rows[0] ? mapUser(rows[0], onlineSet) : null;
 }
 
 async function createUser({ username, password, full_name, role, avatar_url, actor }) {
@@ -77,8 +84,11 @@ async function listUsers({ page = 1, limit = 20, search }) {
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
 
+  const onlineSet = getOnlineUserIdSet()
+  const lastLoginSelect = (await usersHasLastLoginAtColumn()) ? ", last_login_at" : "";
+
   const rows = await executeQuery(
-    `SELECT id, username, full_name, role, avatar_url, is_active, created_at
+    `SELECT id, username, full_name, role, avatar_url, is_active, created_at${lastLoginSelect}
      FROM users
      ${whereClause}
      ORDER BY created_at DESC
@@ -94,7 +104,7 @@ async function listUsers({ page = 1, limit = 20, search }) {
   const totalItems = Number(count[0].total || 0);
 
   return {
-    items: rows.map(mapUser),
+    items: rows.map((row) => mapUser(row, onlineSet)),
     meta: buildPaginationMeta({
       page,
       limit,

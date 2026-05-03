@@ -49,11 +49,11 @@ async function main() {
   );
 
   const latest = samples[samples.length - 1];
-  assert.ok(typeof latest.Alarms.js1 === "boolean", "Alarm js1 must be boolean");
-  assert.ok(typeof latest.Alarms.js2 === "boolean", "Alarm js2 must be boolean");
-  assert.ok(typeof latest.Alarms.js3 === "boolean", "Alarm js3 must be boolean");
-  assert.ok(typeof latest.Alarms.js4 === "boolean", "Alarm js4 must be boolean");
-  assert.ok(typeof latest.Alarms.js5 === "boolean", "Alarm js5 must be boolean");
+  assert.ok(typeof latest.Alarms.AU === "boolean", "Alarm AU must be boolean");
+  assert.ok(typeof latest.Alarms.Err_1 === "boolean", "Alarm Err_1 must be boolean");
+  assert.ok(typeof latest.Alarms.Err_2 === "boolean", "Alarm Err_2 must be boolean");
+  assert.ok(typeof latest.Alarms.Err_3 === "boolean", "Alarm Err_3 must be boolean");
+  assert.ok(typeof latest.Alarms.Err_4 === "boolean", "Alarm Err_4 must be boolean");
 
   console.log(
     `realtime_test passed: ${samples.length} simulator samples captured, counter ${firstCounter} -> ${maxCounter}`

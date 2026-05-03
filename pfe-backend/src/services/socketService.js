@@ -1,6 +1,7 @@
 const { Server } = require("socket.io");
 const { env } = require("../config/environment");
 const { assertMachineRealtimeRole, getAuthFromJwtString } = require("../middleware/auth");
+const presenceRegistry = require("./presenceRegistry");
 
 let io;
 
@@ -46,12 +47,24 @@ function initializeSocketServer(httpServer) {
   });
 
   io.on("connection", (socket) => {
+    const auth = socket.data.auth || {};
+    const userId = Number(auth.userId);
+    if (Number.isFinite(userId) && userId > 0) {
+      presenceRegistry.registerUserSocket(userId);
+    }
+    if (auth.role === "ADMIN") {
+      socket.join("admins");
+    }
+
     if (env.nodeEnv !== "production") {
-      const who = socket.data.auth && socket.data.auth.username ? socket.data.auth.username : "?";
+      const who = auth.username || "?";
       console.log(`[socketService] Client connected: ${socket.id} (${who})`);
     }
 
     socket.on("disconnect", () => {
+      if (Number.isFinite(userId) && userId > 0) {
+        presenceRegistry.unregisterUserSocket(userId);
+      }
       if (env.nodeEnv !== "production") {
         console.log(`[socketService] Client disconnected: ${socket.id}`);
       }
@@ -79,6 +92,14 @@ function emitRealtimeStatus(payload) {
   io.emit("plc-status", payload);
 }
 
+/** Admin dashboard clients only (Socket.IO room `admins`). */
+function emitAdminDashboardNotification(payload) {
+  if (!io) {
+    return;
+  }
+  io.to("admins").emit("dashboard_notification", payload);
+}
+
 function getSocketServer() {
   return io;
 }
@@ -99,6 +120,7 @@ module.exports = {
   initializeSocketServer,
   emitTelemetryUpdate,
   emitRealtimeStatus,
+  emitAdminDashboardNotification,
   getSocketServer,
   closeSocketServer,
 };

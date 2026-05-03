@@ -52,7 +52,7 @@ This is a **strict, production-grade OT/IT integration system**. All code must:
     mode_local, mode_central, defaut, arret_urgence, Bags_Produced_Counter,
     // Canonical backend fields
     Production_Counter, Live_Weight, Last_Bag_Target, Last_Spout_ID, Machine_Mode,
-    Alarms: { js1, js2, js3, js4, js5 },
+    Alarms: { AU, Err_1, Err_2, Err_3, Err_4 },
     _ts: timestamp
   }
   ```

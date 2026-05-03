@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { getRouteMeta } from "@/lib/navigation"
 import { useAuth } from "@/hooks/useAuth"
+import { useDashboardData } from "@/hooks/useDashboardData"
 
 export function Header({
   isRunning,
@@ -24,6 +25,13 @@ export function Header({
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const { user, role, logout } = useAuth()
+  const isAdmin = role === "ADMIN"
+  const {
+    adminNotifications = [],
+    adminUnreadCount = 0,
+    markAdminNotificationRead,
+    markAllAdminNotificationsRead,
+  } = useDashboardData()
   const routeMeta = useMemo(() => getRouteMeta(pathname), [pathname])
 
   useEffect(() => {
@@ -125,10 +133,60 @@ export function Header({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative inline-flex rounded-full">
-            <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950" />
-            <Bell className="h-5 w-5" />
-          </Button>
+          {isAdmin ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative inline-flex rounded-full">
+                  {adminUnreadCount > 0 ? (
+                    <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-950" />
+                  ) : null}
+                  <Bell className="h-5 w-5" />
+                  <span className="sr-only">Notifications</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80 max-h-[min(22rem,70vh)] overflow-y-auto p-0">
+                <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-800">
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">Notifications</span>
+                  {adminUnreadCount > 0 ? (
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-primary hover:underline"
+                      onClick={() => markAllAdminNotificationsRead()}
+                    >
+                      Mark all read
+                    </button>
+                  ) : null}
+                </div>
+                {adminNotifications.length === 0 ? (
+                  <div className="px-3 py-8 text-center text-sm text-slate-500 dark:text-slate-400">No alerts yet.</div>
+                ) : (
+                  <ul className="py-1">
+                    {adminNotifications.map((n) => (
+                      <li key={n.id} className="border-b border-slate-100 last:border-0 dark:border-slate-800/80">
+                        <button
+                          type="button"
+                          className={`flex w-full flex-col gap-0.5 px-3 py-2.5 text-left text-sm transition-colors hover:bg-slate-100 dark:hover:bg-slate-800/80 ${
+                            n.read ? "opacity-70" : ""
+                          }`}
+                          onClick={() => {
+                            if (!n.read) markAdminNotificationRead(n.id)
+                          }}
+                        >
+                          <span className="font-medium text-slate-900 dark:text-slate-100">{n.title}</span>
+                          {n.subtitle ? (
+                            <span className="line-clamp-2 text-xs text-slate-600 dark:text-slate-400">{n.subtitle}</span>
+                          ) : null}
+                          <span className="text-[10px] text-slate-500 dark:text-slate-500">
+                            {new Date(n.at).toLocaleString()}
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
 
           <Button
             variant="outline"

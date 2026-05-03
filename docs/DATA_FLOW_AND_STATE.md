@@ -27,11 +27,11 @@
   │  ├─ values[12] (BOOL from DB4,X1.1) → Mode_Central_Status → mode_central feedback
   │  ├─ values[13] (INT from DB4,INT22) → Active_Spout_ID → 'active_spout'
   │  ├─ values[14] (INT from DB4,INT26) → Bags_Produced_Counter
-  │  ├─ values[15] (BOOL array DB4,X2.0–X2.4) → Alarmes (js1–js5)
+  │  ├─ Alarm BOOLs (see `PLC_MEMORY_MAP`: Arret_Urgence, Defaut_*) → `Alarms`: AU, Err_1…Err_4
   │  └─ Derived: angle = (active_spout - 1) * 45°
   ├─ Build dual-contract output:
   │  ├─ Legacy UI keys: weight, target_weight, mode_local, mode_central, active_spout, angle, Bags_Produced_Counter, ...
-  │  └─ Canonical keys: Production_Counter, Live_Weight, Last_Bag_Target, Machine_Mode, Alarms: { js1, js2, ... }
+  │  └─ Canonical keys: Production_Counter, Live_Weight, Last_Bag_Target, Machine_Mode, Alarms: { AU, Err_1, Err_2, Err_3, Err_4 }
   └─ Return merged payload with _ts (current Unix timestamp)
   ↓
 [realtimeEngineService.processProductionHandshake(telemetry)]
@@ -50,7 +50,7 @@
   ↓
 [realtimeEngineService.processAlarmTransitions(telemetry)]
   ├─ Compare telemetry.Alarms vs previousAlarms snapshot
-  ├─ For each alarm code (js1–js5):
+  ├─ For each alarm code (AU, Err_1…Err_4):
   │  ├─ if (previous[code] === false && current[code] === true):
   │  │  ├─ INSERT alarm_logs: { alarm_code, started_at: NOW(), cleared_at: NULL }
   │  │  └─ Store alarm_id for later update
@@ -174,24 +174,24 @@ async function processProductionHandshake(telemetry) {
 
 ## Alarm State Machine
 
-### Alarm Flags (js1–js5)
-Each alarm flag in DB4 (BOOL) represents a latched alarm state:
+### Alarm Flags (`AU`, `Err_1`…`Err_4`)
+Each alarm flag from the PLC represents a latched state (see `alarmTelemetry.js` for French log descriptions):
 
-| Code | Meaning | Clear Condition |
+| Code | PLC source (concept) | Notes |
 |---|---|---|
-| js1 | Scale sensor fault | PLC logic detects sensor recovery + manual reset |
-| js2 | Motor overload | Overload relay reset; thermal recovery |
-| js3 | Cement flow fault | Flow sensor detects flow restoration |
-| js4 | Disjunctor trip (breaker) | Manual switch reset |
-| js5 | Reserved | N/A |
+| AU | Arrêt urgence | Signal AU |
+| Err_1 | Défaut écoulement ciment | Vanne / bourrage / silo |
+| Err_2 | Défaut capteur | Retour capteur bande |
+| Err_3 | Défaut moteur | Relais thermique |
+| Err_4 | Défaut disjoncteur | Protection électrique |
 
 ### State Transition Detection
 
 ```javascript
 async function processAlarmTransitions(telemetry) {
-  const currentAlarms = telemetry.Alarms; // { js1, js2, js3, js4, js5 }
+  const currentAlarms = telemetry.Alarms; // { AU, Err_1, Err_2, Err_3, Err_4 }
 
-  for (const alarmCode of ['js1', 'js2', 'js3', 'js4', 'js5']) {
+  for (const alarmCode of ['AU', 'Err_1', 'Err_2', 'Err_3', 'Err_4']) {
     const previousState = previousAlarms[alarmCode];
     const currentState = currentAlarms[alarmCode];
 
@@ -246,7 +246,7 @@ function cloneDeep(obj) {
 ```javascript
 {
   id: 1,
-  alarm_code: 'js2',                    // String identifier
+  alarm_code: 'Err_1',                  // String identifier
   started_at: '2025-01-15T10:30:45Z',   // UTC timestamp
   cleared_at: '2025-01-15T10:35:22Z',   // NULL if still active
   duration_ms: 277000,                  // GENERATED COLUMN: TIMESTAMPDIFF(MILLISECOND, ...)
@@ -257,7 +257,7 @@ function cloneDeep(obj) {
 ### Multi-Alarm Scenarios
 - **Simultaneous Alarms**: Each alarm has independent log entry; duration calculated independently
 - **Alarm Reoccurrence**: If alarm clears at T1 then starts again at T2, creates NEW log entry
-- **Log Query**: `SELECT * FROM alarm_logs WHERE alarm_code IN ('js1', 'js2') AND cleared_at IS NULL` returns active alarms
+- **Log Query**: `SELECT * FROM alarm_logs WHERE alarm_code IN ('AU','Err_1') AND end_time IS NULL` returns active alarms (schema uses `start_time` / `end_time` in this project)
 
 ---
 
@@ -430,11 +430,11 @@ export function DashboardDataProvider({ children }) {
   });
 
   const [alarms, setAlarms] = useState({
-    js1: { name: 'Scale Sensor', active: false, lastCleared: null },
-    js2: { name: 'Motor Overload', active: false, lastCleared: null },
-    js3: { name: 'Cement Flow', active: false, lastCleared: null },
-    js4: { name: 'Disjunctor', active: false, lastCleared: null },
-    js5: { name: 'Reserved', active: false, lastCleared: null }
+    AU: { name: 'Arrêt urgence (AU)', active: false, lastCleared: null },
+    Err_1: { name: 'Défaut écoulement ciment', active: false, lastCleared: null },
+    Err_2: { name: 'Défaut capteur', active: false, lastCleared: null },
+    Err_3: { name: 'Défaut moteur', active: false, lastCleared: null },
+    Err_4: { name: 'Défaut disjoncteur', active: false, lastCleared: null }
   });
 
   const [isConnected, setIsConnected] = useState(false);
@@ -482,7 +482,7 @@ export function DashboardDataProvider({ children }) {
 
   function updateAlarmsFromPayload(alarmsPayload) {
     const newAlarms = { ...alarms };
-    for (const code of ['js1', 'js2', 'js3', 'js4', 'js5']) {
+    for (const code of ['AU', 'Err_1', 'Err_2', 'Err_3', 'Err_4']) {
       if (alarmsPayload[code] !== undefined) {
         newAlarms[code] = {
           ...newAlarms[code],

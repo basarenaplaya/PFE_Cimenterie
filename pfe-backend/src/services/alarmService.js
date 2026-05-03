@@ -1,6 +1,8 @@
 const { executeQuery } = require("../config/database");
 const { HttpError } = require("../utils/httpError");
 const { buildPaginationMeta } = require("../utils/pagination");
+const { emitAdminDashboardNotification } = require("./socketService");
+const { TELEMETRY_ALARM_KEYS, describeAlarmForLog } = require("../constants/alarmTelemetry");
 
 function mapAlarmLog(row) {
   return {
@@ -15,8 +17,8 @@ function mapAlarmLog(row) {
 }
 
 async function startAlarm({ alarmCode, description, startTime = new Date() }) {
-  const code = String(alarmCode || "").trim().toLowerCase();
-  if (!code) {
+  const code = String(alarmCode || "").trim();
+  if (!code || !TELEMETRY_ALARM_KEYS.includes(code)) {
     throw new HttpError(400, "Invalid alarm code.");
   }
 
@@ -37,11 +39,26 @@ async function startAlarm({ alarmCode, description, startTime = new Date() }) {
     };
   }
 
+  const desc = String(description || describeAlarmForLog(code));
+
   const result = await executeQuery(
     `INSERT INTO alarm_logs (alarm_code, description, start_time, duration_sec)
      VALUES (?, ?, ?, 0)`,
-    [code, String(description || `PLC alarm ${code.toUpperCase()} active`), startTime]
+    [code, desc, startTime]
   );
+
+  try {
+    const at = startTime instanceof Date ? startTime : new Date(startTime);
+    emitAdminDashboardNotification({
+      type: "alarm",
+      alarm_log_id: result.insertId,
+      alarm_code: code,
+      description: desc,
+      at: at.toISOString(),
+    });
+  } catch {
+    /* non-fatal */
+  }
 
   return {
     started: true,
@@ -51,8 +68,8 @@ async function startAlarm({ alarmCode, description, startTime = new Date() }) {
 }
 
 async function clearAlarm({ alarmCode, endTime = new Date() }) {
-  const code = String(alarmCode || "").trim().toLowerCase();
-  if (!code) {
+  const code = String(alarmCode || "").trim();
+  if (!code || !TELEMETRY_ALARM_KEYS.includes(code)) {
     throw new HttpError(400, "Invalid alarm code.");
   }
 

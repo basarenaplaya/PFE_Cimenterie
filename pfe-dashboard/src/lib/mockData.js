@@ -1,9 +1,25 @@
 const alarmDictionary = [
-  { alarm_code: "js1", description: "Emergency Stop" },
-  { alarm_code: "js2", description: "Silo Jam" },
-  { alarm_code: "js3", description: "Bag Clamp Fault" },
-  { alarm_code: "js4", description: "Conveyor Overload" },
-  { alarm_code: "js5", description: "Spout Misalignment" },
+  { alarm_code: "AU", description: "Arrêt d'urgence : activation du signal AU (sécurité machine)." },
+  {
+    alarm_code: "Err_1",
+    description:
+      "Défaut Écoulement Ciment : blocage ou absence d'écoulement du ciment dans le sac après l'ouverture de la vanne (bourrage ou silo vide).",
+  },
+  {
+    alarm_code: "Err_2",
+    description:
+      "Défaut Capteur : incohérence détectée — absence du signal de retour capteur confirmant la rotation de la bande transporteuse.",
+  },
+  {
+    alarm_code: "Err_3",
+    description:
+      "Défaut Moteur : déclenchement du relais thermique signalant une surcharge, une surchauffe ou un blocage mécanique du moteur.",
+  },
+  {
+    alarm_code: "Err_4",
+    description:
+      "Défaut Disjoncteur : coupure critique de l'alimentation électrique suite au déclenchement d'un disjoncteur de protection (court-circuit).",
+  },
 ]
 
 export const mockMachineStatus = [{ id: 1, current_mode: "CENTRAL", is_running: true }]

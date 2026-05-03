@@ -157,6 +157,13 @@ export default function UserManagementPage() {
     fetchUsers({ loadingMode: "full" })
   }, [fetchUsers])
 
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      void fetchUsers({ loadingMode: "soft" })
+    }, 12000)
+    return () => window.clearInterval(id)
+  }, [fetchUsers])
+
   const selectedUserLabel = useMemo(() => {
     if (!deleteTarget) return ""
     return deleteTarget.full_name || deleteTarget.username || `User #${deleteTarget.id}`
@@ -314,6 +321,7 @@ export default function UserManagementPage() {
             <TableHead>User</TableHead>
             <TableHead>Role</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Last in</TableHead>
             <TableHead>Created</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -346,6 +354,17 @@ export default function UserManagementPage() {
                   >
                     {row.is_active ? "Active" : "Inactive"}
                   </Badge>
+                </TableCell>
+                <TableCell className="text-xs">
+                  {row.dashboard_online ? (
+                    <Badge variant="outline" className="border-emerald-500/50 text-emerald-800 dark:text-emerald-200">
+                      Online
+                    </Badge>
+                  ) : (
+                    <span className="text-slate-500 dark:text-slate-400">
+                      {row.last_login_at ? formatDateTime(row.last_login_at) : "—"}
+                    </span>
+                  )}
                 </TableCell>
                 <TableCell className="text-xs text-slate-500 dark:text-slate-400">
                   {formatDateTime(row.created_at)}

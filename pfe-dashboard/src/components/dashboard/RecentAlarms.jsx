@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Table,
   TableBody,
@@ -28,6 +36,7 @@ export function RecentAlarms() {
   const rows = alarms.slice(0, 8)
   const isInitialLoading = isLoading && rows.length === 0
   const [, setTick] = useState(0)
+  const [descriptionView, setDescriptionView] = useState(null)
 
   const hasActiveAlarm = alarms.some((row) => row.end_time === null)
 
@@ -62,9 +71,10 @@ export function RecentAlarms() {
             <TableRow>
               <TableHead>Code</TableHead>
               <TableHead>Description</TableHead>
+              <TableHead className="w-[1%] whitespace-nowrap text-right">Details</TableHead>
               <TableHead>Duration</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead className="text-right">Start Time</TableHead>
+              <TableHead className="text-right">Start time</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -82,7 +92,26 @@ export function RecentAlarms() {
               return (
                 <TableRow key={row.id}>
                   <TableCell className="font-medium">{row.alarm_code}</TableCell>
-                  <TableCell className="max-w-[220px] truncate">{row.description}</TableCell>
+                  <TableCell className="max-w-[220px] truncate" title={row.description}>
+                    {row.description}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 shrink-0 text-xs"
+                      aria-label="View full alarm description"
+                      onClick={() =>
+                        setDescriptionView({
+                          code: row.alarm_code,
+                          text: row.description || "—",
+                        })
+                      }
+                    >
+                      View
+                    </Button>
+                  </TableCell>
                   <TableCell>
                     {isActive ? (
                       <span className="text-amber-600 dark:text-amber-400">{durationLabel} (active)</span>
@@ -103,6 +132,27 @@ export function RecentAlarms() {
             })}
           </TableBody>
         </Table>
+
+        <Dialog
+          open={descriptionView !== null}
+          onOpenChange={(open) => {
+            if (!open) setDescriptionView(null)
+          }}
+        >
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Alarm {descriptionView?.code ?? ""}</DialogTitle>
+            </DialogHeader>
+            <p className="max-h-[min(60vh,24rem)] overflow-y-auto text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+              {descriptionView?.text}
+            </p>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDescriptionView(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )

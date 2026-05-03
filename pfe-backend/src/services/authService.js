@@ -2,10 +2,11 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { executeQuery } = require("../config/database");
 const { env } = require("../config/environment");
+const { usersHasLastLoginAtColumn } = require("../config/usersTableSchema");
 const { HttpError } = require("../utils/httpError");
 const { sanitizeFields } = require("../utils/sanitize");
 
-const publicUserFields =
+const PUBLIC_USER_BASE_FIELDS =
   "id, username, full_name, role, avatar_url, is_active, created_at";
 
 function issueAccessToken(user) {
@@ -29,6 +30,7 @@ function toPublicUser(user) {
     avatar_url: user.avatar_url,
     is_active: Boolean(user.is_active),
     created_at: user.created_at,
+    last_login_at: user.last_login_at ?? null,
   };
 }
 
@@ -55,10 +57,9 @@ async function findUserWithPasswordByUsername(username) {
 }
 
 async function findPublicUserById(userId) {
-  const users = await executeQuery(
-    `SELECT ${publicUserFields} FROM users WHERE id = ? LIMIT 1`,
-    [userId]
-  );
+  const hasLastLogin = await usersHasLastLoginAtColumn();
+  const fields = hasLastLogin ? `${PUBLIC_USER_BASE_FIELDS}, last_login_at` : PUBLIC_USER_BASE_FIELDS;
+  const users = await executeQuery(`SELECT ${fields} FROM users WHERE id = ? LIMIT 1`, [userId]);
 
   return users[0] ? toPublicUser(users[0]) : null;
 }
@@ -129,9 +130,15 @@ async function loginUser({ username, password, ipAddress }) {
 
   await writeAuditLog(user.id, "AUTH_LOGIN_SUCCESS", ipAddress);
 
+  if (await usersHasLastLoginAtColumn()) {
+    await executeQuery("UPDATE users SET last_login_at = UTC_TIMESTAMP(3) WHERE id = ?", [user.id]);
+  }
+
+  const publicUser = await findPublicUserById(user.id);
+
   return {
-    user: toPublicUser(user),
-    token: issueAccessToken(user),
+    user: publicUser,
+    token: issueAccessToken(publicUser),
   };
 }
 

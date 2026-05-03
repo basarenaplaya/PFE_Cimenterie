@@ -121,6 +121,34 @@ function normalizeList(payload) {
   return Array.isArray(data?.items) ? data.items : []
 }
 
+function normalizeTelemetryAlarms(alarms) {
+  const a = alarms && typeof alarms === "object" ? alarms : {}
+  const legacy =
+    typeof a.js1 === "boolean" ||
+    typeof a.js2 === "boolean" ||
+    typeof a.js3 === "boolean" ||
+    typeof a.js4 === "boolean" ||
+    typeof a.js5 === "boolean"
+
+  if (legacy) {
+    return {
+      AU: Boolean(a.js1),
+      Err_1: Boolean(a.js2),
+      Err_2: Boolean(a.js3),
+      Err_3: Boolean(a.js4),
+      Err_4: Boolean(a.js5),
+    }
+  }
+
+  return {
+    AU: Boolean(a.AU),
+    Err_1: Boolean(a.Err_1),
+    Err_2: Boolean(a.Err_2),
+    Err_3: Boolean(a.Err_3),
+    Err_4: Boolean(a.Err_4),
+  }
+}
+
 function normalizeTelemetry(payload) {
   if (!payload || typeof payload !== "object") return null
 
@@ -137,13 +165,7 @@ function normalizeTelemetry(payload) {
     motor_bande: Boolean(payload.motor_bande),
     mode_local: Boolean(payload.mode_local),
     mode_central: Boolean(payload.mode_central),
-    Alarms: {
-      js1: Boolean(alarms.js1),
-      js2: Boolean(alarms.js2),
-      js3: Boolean(alarms.js3),
-      js4: Boolean(alarms.js4),
-      js5: Boolean(alarms.js5),
-    },
+    Alarms: normalizeTelemetryAlarms(alarms),
   }
 
   const scalarValues = [
@@ -239,9 +261,27 @@ function deriveOeeBreakdown(alarms) {
 }
 
 export function DashboardDataProvider({ children }) {
-  const { isAuthenticated, token, role } = useAuth()
+  const { isAuthenticated, token, role, user } = useAuth()
   const [state, setState] = useState(INITIAL_STATE)
+  const [adminNotifications, setAdminNotifications] = useState([])
   const isAdmin = role === "ADMIN"
+
+  const pushAdminNotification = useCallback((item) => {
+    setAdminNotifications((prev) => [{ ...item }, ...prev].slice(0, 50))
+  }, [])
+
+  const markAdminNotificationRead = useCallback((id) => {
+    setAdminNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  }, [])
+
+  const markAllAdminNotificationsRead = useCallback(() => {
+    setAdminNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }, [])
+
+  const adminUnreadCount = useMemo(
+    () => adminNotifications.filter((n) => !n.read).length,
+    [adminNotifications]
+  )
 
   const refresh = useCallback(async () => {
     if (!isAuthenticated) return
@@ -294,6 +334,12 @@ export function DashboardDataProvider({ children }) {
       }
     })
   }, [isAuthenticated, isAdmin])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setAdminNotifications([])
+    }
+  }, [isAuthenticated])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -376,11 +422,38 @@ export function DashboardDataProvider({ children }) {
       }))
     }
 
+    const handleDashboardNotification = (payload) => {
+      if (!isAdmin || !payload || typeof payload !== "object") return
+      const type = payload.type
+      if (type === "login" && Number(payload.userId) === Number(user?.id)) {
+        return
+      }
+      const at = typeof payload.at === "string" ? payload.at : new Date().toISOString()
+      let id
+      let title
+      let subtitle
+      if (type === "alarm") {
+        id = `alarm-${payload.alarm_log_id}-${at}`
+        title = `Alarme ${String(payload.alarm_code || "").trim() || "?"}`
+        subtitle = String(payload.description || "").slice(0, 140)
+      } else if (type === "login") {
+        id = `login-${payload.userId}-${at}`
+        title = `${payload.username || "User"} signed in`
+        subtitle = payload.full_name ? String(payload.full_name) : "Session started"
+      } else {
+        return
+      }
+      pushAdminNotification({ id, type, title, subtitle, at, read: false })
+    }
+
     socket.on("connect", handleConnect)
     socket.on("disconnect", handleDisconnect)
     socket.on("connect_error", handleConnectError)
     socket.on("realtime_status", handleRealtimeStatus)
     socket.on("telemetry_update", handleTelemetryUpdate)
+    if (isAdmin) {
+      socket.on("dashboard_notification", handleDashboardNotification)
+    }
 
     if (socket.connected) {
       handleConnect()
@@ -392,9 +465,12 @@ export function DashboardDataProvider({ children }) {
       socket.off("connect_error", handleConnectError)
       socket.off("realtime_status", handleRealtimeStatus)
       socket.off("telemetry_update", handleTelemetryUpdate)
+      if (isAdmin) {
+        socket.off("dashboard_notification", handleDashboardNotification)
+      }
       disconnectRealtimeSocket()
     }
-  }, [isAuthenticated, token])
+  }, [isAuthenticated, token, isAdmin, user?.id, pushAdminNotification])
 
   useEffect(() => {
     if (!isAuthenticated || !isAdmin) {
@@ -456,8 +532,23 @@ export function DashboardDataProvider({ children }) {
       oee,
       liveMetrics,
       realtime,
+      adminNotifications,
+      adminUnreadCount,
+      markAdminNotificationRead,
+      markAllAdminNotificationsRead,
     }),
-    [state, refresh, machineStatus, oee, liveMetrics, realtime]
+    [
+      state,
+      refresh,
+      machineStatus,
+      oee,
+      liveMetrics,
+      realtime,
+      adminNotifications,
+      adminUnreadCount,
+      markAdminNotificationRead,
+      markAllAdminNotificationsRead,
+    ]
   )
 
   return <DashboardDataContext.Provider value={value}>{children}</DashboardDataContext.Provider>
