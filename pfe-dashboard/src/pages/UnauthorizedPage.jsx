@@ -10,9 +10,7 @@ export default function UnauthorizedPage() {
           <ShieldAlert className="h-6 w-6" />
         </div>
         <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Access Restricted</h1>
-        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
-          Your current role does not have permission to open this section.
-        </p>
+        <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">You don&apos;t have access to this page.</p>
         <Button asChild className="mt-6 w-full">
           <Link to="/overview">Return to Overview</Link>
         </Button>

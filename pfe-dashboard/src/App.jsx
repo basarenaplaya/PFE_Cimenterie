@@ -18,6 +18,7 @@ const UnauthorizedPage = lazy(() => import("./pages/UnauthorizedPage"))
 const UserManagementPage = lazy(() => import("./pages/UserManagementPage"))
 const CameraConfigPage = lazy(() => import("./pages/CameraConfigPage"))
 const AuditLogsPage = lazy(() => import("./pages/AuditLogsPage"))
+const AdminDataExplorerPage = lazy(() => import("./pages/AdminDataExplorerPage"))
 const MachineViewPage = lazy(() => import("./pages/MachineViewPage"))
 const ProfilePage = lazy(() => import("./pages/ProfilePage"))
 
@@ -82,6 +83,7 @@ function App() {
                   <Route element={<RoleBasedRoute allowedRoles={["ADMIN"]} fallbackTo="/machine-view" />}>
                     <Route path="/admin/users" element={<UserManagementPage />} />
                     <Route path="/admin/cameras" element={<CameraConfigPage />} />
+                    <Route path="/admin/explorer" element={<AdminDataExplorerPage />} />
                     <Route path="/admin/logs" element={<AuditLogsPage />} />
                     <Route
                       path="/admin/audit-logs"

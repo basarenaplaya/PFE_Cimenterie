@@ -124,7 +124,7 @@ export function KPIGrid() {
             <Badge variant={item.trendTone === "ok" ? "secondary" : "destructive"}>
               {item.trendLabel}
             </Badge>
-            {error ? <Badge variant="outline">Live sync delayed</Badge> : null}
+            {error ? <Badge variant="outline">Cached</Badge> : null}
           </div>
         </CardContent>
       </Card>

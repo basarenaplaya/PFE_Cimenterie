@@ -61,10 +61,7 @@ export function CameraWatchGrid() {
         <CardHeader className="flex flex-row flex-wrap items-end justify-between gap-3 space-y-0">
           <div>
             <CardTitle className="text-base">Live watch</CardTitle>
-            <CardDescription>
-              Streams load only when you press Play. Snapshots save when you press Stop (requires camera CORS for
-              capture).
-            </CardDescription>
+            <CardDescription>Play loads the stream. Stop can save a snapshot if the camera allows it (CORS).</CardDescription>
           </div>
           <Button type="button" variant="outline" size="sm" disabled={loading || refreshing} onClick={() => load("soft")}>
             <RefreshCw className={`size-4 ${refreshing ? "animate-spin" : ""}`} />

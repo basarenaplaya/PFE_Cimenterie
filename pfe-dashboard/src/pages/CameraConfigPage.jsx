@@ -246,9 +246,7 @@ export default function CameraConfigPage() {
     <div className="space-y-6">
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Camera Configuration</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Manage RTSP and HTTP streams for plant visibility and operator confidence.
-        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Live streams and feed configuration.</p>
       </section>
 
       <Tabs defaultValue="watch" className="dashboard-enter space-y-4" style={{ animationDelay: "120ms" }}>
@@ -415,9 +413,7 @@ export default function CameraConfigPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Camera</DialogTitle>
-            <DialogDescription>
-              Register a new stream source for industrial monitoring.
-            </DialogDescription>
+            <DialogDescription>Name and stream URL.</DialogDescription>
           </DialogHeader>
 
           <form className="space-y-3" onSubmit={handleCreate}>
@@ -464,9 +460,7 @@ export default function CameraConfigPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Camera</DialogTitle>
-            <DialogDescription>
-              Update camera display name or stream URL.
-            </DialogDescription>
+            <DialogDescription>Change name or URL.</DialogDescription>
           </DialogHeader>
 
           <form className="space-y-3" onSubmit={handleUpdate}>
@@ -511,9 +505,7 @@ export default function CameraConfigPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete Camera</DialogTitle>
-            <DialogDescription>
-              This removes the stream entry from the configuration table.
-            </DialogDescription>
+            <DialogDescription>Removes this feed from the list.</DialogDescription>
           </DialogHeader>
 
           <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300">

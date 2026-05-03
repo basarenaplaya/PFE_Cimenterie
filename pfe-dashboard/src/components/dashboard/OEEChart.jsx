@@ -39,9 +39,7 @@ export function OEEChart({ className }) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
             <CardTitle className="text-base">Machine Status / OEE</CardTitle>
-            <CardDescription className="text-xs leading-relaxed">
-              Performance index from running vs stopped time over the modeled shift window (availability-style OEE).
-            </CardDescription>
+            <CardDescription className="text-xs">Running vs stopped time for the shift window.</CardDescription>
           </div>
           <span className="shrink-0 rounded-full border border-slate-200/90 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600 dark:border-slate-700 dark:bg-slate-900/80 dark:text-slate-300">
             Index

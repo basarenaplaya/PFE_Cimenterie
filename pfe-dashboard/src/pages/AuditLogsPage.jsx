@@ -123,9 +123,7 @@ export default function AuditLogsPage() {
     <div className="space-y-6">
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Audit Logs</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Inspect administrative actions and security-sensitive events across the platform.
-        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Who did what, and when.</p>
       </section>
 
       <Card
@@ -136,7 +134,8 @@ export default function AuditLogsPage() {
           <div>
             <CardTitle className="text-base">Security Timeline</CardTitle>
             <CardDescription>
-              {totalItems} events {activeFilters.length > 0 ? "for active filters" : "captured"}.
+              {totalItems} entr{totalItems === 1 ? "y" : "ies"}
+              {activeFilters.length > 0 ? " · filtered" : ""}.
             </CardDescription>
           </div>
 

@@ -9,6 +9,14 @@ const auditQuerySchema = Joi.object({
   limit: Joi.number().integer().min(1).max(200).default(20),
   action: Joi.string().trim().max(255).allow("", null).optional(),
   user_id: Joi.number().integer().positive().optional(),
+  startDate: Joi.date().iso(),
+  endDate: Joi.date().iso(),
+}).custom((value, helpers) => {
+  if (value.startDate && value.endDate && value.startDate > value.endDate) {
+    return helpers.message('"startDate" must be less than or equal to "endDate".');
+  }
+
+  return value;
 });
 
 const getAuditLogs = asyncHandler(async (req, res) => {
@@ -26,6 +34,8 @@ const getAuditLogs = asyncHandler(async (req, res) => {
     limit: value.limit,
     action: value.action,
     userId: value.user_id,
+    startDate: value.startDate,
+    endDate: value.endDate,
   });
 
   return sendSuccess(res, {

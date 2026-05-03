@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   Monitor,
   Package,
+  Search,
   User,
   Users,
   Wrench,
@@ -17,7 +18,7 @@ export const dashboardNavigation = [
     icon: LayoutDashboard,
     to: "/overview",
     eyebrow: "Overview",
-    title: "Main Dashboard",
+    title: "Overview",
     roles: ["ADMIN"],
   },
   {
@@ -25,7 +26,7 @@ export const dashboardNavigation = [
     icon: Monitor,
     to: "/machine-view",
     eyebrow: "Machine",
-    title: "PLC Native Control",
+    title: "Machine",
     roles: BASE_ROLES,
   },
   {
@@ -33,7 +34,7 @@ export const dashboardNavigation = [
     icon: Package,
     to: "/production",
     eyebrow: "Production",
-    title: "Production Analytics",
+    title: "Production",
     roles: ["ADMIN"],
   },
   {
@@ -41,7 +42,7 @@ export const dashboardNavigation = [
     icon: Wrench,
     to: "/maintenance",
     eyebrow: "Maintenance",
-    title: "Maintenance Center",
+    title: "Maintenance",
     roles: ["ADMIN"],
   },
   {
@@ -49,7 +50,7 @@ export const dashboardNavigation = [
     icon: Camera,
     to: "/admin/cameras",
     eyebrow: "Administration",
-    title: "Camera Configuration",
+    title: "Cameras",
     roles: ["ADMIN"],
   },
   {
@@ -57,7 +58,15 @@ export const dashboardNavigation = [
     icon: Users,
     to: "/admin/users",
     eyebrow: "Administration",
-    title: "User Management",
+    title: "Users",
+    roles: ["ADMIN"],
+  },
+  {
+    name: "Data Explorer",
+    icon: Search,
+    to: "/admin/explorer",
+    eyebrow: "Administration",
+    title: "Data explorer",
     roles: ["ADMIN"],
   },
   {
@@ -65,7 +74,7 @@ export const dashboardNavigation = [
     icon: ClipboardList,
     to: "/admin/logs",
     eyebrow: "Administration",
-    title: "System Audit Logs",
+    title: "Audit log",
     roles: ["ADMIN"],
   },
   {
@@ -73,7 +82,7 @@ export const dashboardNavigation = [
     icon: User,
     to: "/profile",
     eyebrow: "Profile",
-    title: "User Profile",
+    title: "Profile",
     roles: BASE_ROLES,
   },
 ]

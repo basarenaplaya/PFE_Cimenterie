@@ -100,9 +100,52 @@ export async function deleteCamera(cameraId) {
   return Boolean(data.deleted)
 }
 
-export async function listAuditLogs({ page = 1, limit = 20, action = "", userId } = {}) {
+export async function listAuditLogs({ page = 1, limit = 20, action = "", userId, startDate, endDate } = {}) {
   const payload = await api.get(
-    `/api/admin/audit-logs${buildQuery({ page, limit, action, user_id: userId })}`
+    `/api/admin/audit-logs${buildQuery({
+      page,
+      limit,
+      action,
+      user_id: userId,
+      startDate,
+      endDate,
+    })}`
+  )
+  const { data, meta } = resolvePayload(payload)
+
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    meta,
+  }
+}
+
+export async function listProductionHistory({ page = 1, limit = 20, startDate, endDate, spout_id } = {}) {
+  const payload = await api.get(
+    `/api/production${buildQuery({
+      page,
+      limit,
+      startDate,
+      endDate,
+      spout_id,
+    })}`
+  )
+  const { data, meta } = resolvePayload(payload)
+
+  return {
+    items: Array.isArray(data.items) ? data.items : [],
+    meta,
+  }
+}
+
+export async function listAlarmHistory({ page = 1, limit = 20, startDate, endDate, status } = {}) {
+  const payload = await api.get(
+    `/api/alarms${buildQuery({
+      page,
+      limit,
+      startDate,
+      endDate,
+      status,
+    })}`
   )
   const { data, meta } = resolvePayload(payload)
 

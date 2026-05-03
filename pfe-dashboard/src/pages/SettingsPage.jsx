@@ -11,11 +11,11 @@ const settingsCards = [
   },
   {
     title: "Alert Policy",
-    detail: "Critical alarms trigger operator acknowledgment within 30s.",
+    detail: "Critical alarms need an ack within 30s.",
   },
   {
     title: "Theme",
-    detail: "Use top-right toggle for light/dark mode preference.",
+    detail: "Toggle is top-right.",
   },
 ]
 
@@ -24,9 +24,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Dashboard Settings</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Non-persistent placeholders for now. These remain local until backend settings endpoints are ready.
-        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Placeholder cards until settings are wired up.</p>
       </section>
 
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2 dashboard-enter" style={{ animationDelay: "120ms" }}>

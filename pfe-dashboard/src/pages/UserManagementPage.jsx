@@ -393,9 +393,7 @@ export default function UserManagementPage() {
     <div className="space-y-6">
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">User Management</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Manage platform accounts, enforce role assignments, and secure operator access.
-        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Users and roles.</p>
       </section>
 
       <Card
@@ -406,7 +404,8 @@ export default function UserManagementPage() {
           <div>
             <CardTitle className="text-base">Accounts</CardTitle>
             <CardDescription>
-              {totalItems} total users {search ? `matching "${search}"` : "registered in the system"}.
+              {totalItems} user{totalItems === 1 ? "" : "s"}
+              {search ? ` · "${search}"` : ""}.
             </CardDescription>
           </div>
 
@@ -478,9 +477,7 @@ export default function UserManagementPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create User</DialogTitle>
-            <DialogDescription>
-              Register a new account with role and initial credentials.
-            </DialogDescription>
+            <DialogDescription>New user, role, password.</DialogDescription>
           </DialogHeader>
 
           <form className="space-y-3" onSubmit={handleCreateUser}>
@@ -567,9 +564,7 @@ export default function UserManagementPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
-            <DialogDescription>
-              Update user identity and role assignment.
-            </DialogDescription>
+            <DialogDescription>Name, role, avatar.</DialogDescription>
           </DialogHeader>
 
           <form className="space-y-3" onSubmit={handleUpdateUser}>
@@ -627,9 +622,7 @@ export default function UserManagementPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
-            <DialogDescription>
-              This action removes the account and cannot be reversed.
-            </DialogDescription>
+            <DialogDescription>Permanent — they won&apos;t be able to sign in again.</DialogDescription>
           </DialogHeader>
 
           <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-300">

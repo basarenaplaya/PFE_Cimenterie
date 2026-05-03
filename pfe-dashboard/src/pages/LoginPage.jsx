@@ -110,7 +110,7 @@ export default function LoginPage() {
           className="mb-5 inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-3 py-1.5 text-xs font-medium tracking-wide text-slate-600 shadow-sm backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/75 dark:text-slate-300"
         >
           <ShieldCheck className="h-3.5 w-3.5 text-cyan-600 dark:text-cyan-300" />
-          Secure Access Gateway
+          Staff login
         </MotionDiv>
 
         <MotionDiv {...cardMotion} className="w-full">
@@ -123,7 +123,7 @@ export default function LoginPage() {
                 <div>
                   <CardTitle className="text-xl text-slate-900 dark:text-slate-50">{APP_BRAND_NAME}</CardTitle>
                   <CardDescription className="text-slate-600 dark:text-slate-300">
-                    Authenticate to access live industrial operations.
+                    Use your dashboard username and password.
                   </CardDescription>
                 </div>
               </div>

@@ -89,9 +89,7 @@ export function ProductionPricingDialogTrigger() {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Tarif (TND / tonne)</DialogTitle>
-          <DialogDescription>
-            Prix utilisé pour la valeur produite et le coût de surdosage sur la journée UTC en cours.
-          </DialogDescription>
+          <DialogDescription>Appliqué à la valeur produite et au surdosage (jour UTC).</DialogDescription>
         </DialogHeader>
         <div className="grid gap-2 py-1">
           <label htmlFor="price-per-ton-tnd" className="text-sm font-medium text-slate-900 dark:text-slate-50">

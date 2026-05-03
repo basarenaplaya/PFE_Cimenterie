@@ -37,9 +37,7 @@ export function MaintenanceCenter() {
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <div className="mb-3">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Maintenance Center</h2>
-          <p className="text-sm text-slate-600 dark:text-slate-300">
-            Monitor downtime contributors and alarm history for proactive service.
-          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-300">Drift, OEE, and recent alarms.</p>
         </div>
       </section>
 

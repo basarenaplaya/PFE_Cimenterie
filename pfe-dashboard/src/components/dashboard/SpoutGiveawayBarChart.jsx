@@ -181,9 +181,9 @@ export function SpoutGiveawayBarChart({ points, isLoading, error, className, emb
     >
       <CardHeader className="shrink-0 space-y-1 px-4 pb-2 pt-4 sm:px-6">
         <CardTitle className="text-base">Avg giveaway by spout (today UTC)</CardTitle>
-        <CardDescription className="text-xs leading-relaxed">
-          Bars above {SPOUT_DRIFT_THRESHOLD_KG.toFixed(2)} kg indicate calibration drift worth inspecting. Y-axis starts
-          at 0 kg when all averages are non-negative.
+        <CardDescription className="text-xs">
+          Over {SPOUT_DRIFT_THRESHOLD_KG.toFixed(2)} kg suggests a look at calibration. Y-axis starts at 0 when values
+          are non-negative.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col justify-center px-3 pb-5 pt-0 sm:px-6">{chartBody}</CardContent>

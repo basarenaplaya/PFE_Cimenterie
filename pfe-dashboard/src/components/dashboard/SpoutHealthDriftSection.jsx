@@ -26,7 +26,7 @@ export function SpoutHealthDriftSection({ points, isLoading, error }) {
             </div>
             <div className="min-w-0 space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <CardTitle className="text-lg">Spout Health & Calibration Drift</CardTitle>
+              <CardTitle className="text-lg">Spout drift · today (UTC)</CardTitle>
                 {flagged.length > 0 ? (
                   <Badge variant="destructive" className="font-semibold tracking-wide">
                     {flagged.length} flagged
@@ -41,9 +41,8 @@ export function SpoutHealthDriftSection({ points, isLoading, error }) {
                   </Badge>
                 ) : null}
               </div>
-              <CardDescription className="max-w-3xl text-xs leading-relaxed sm:text-[13px]">
-                Average giveaway per filling spout for the current UTC day. Spot weigh-cell drift before it affects bag
-                weight compliance.
+              <CardDescription className="max-w-2xl text-xs sm:text-[13px]">
+                Mean giveaway by spout for the UTC day. Watch bars that climb — usually weigh-cell drift.
               </CardDescription>
             </div>
           </div>

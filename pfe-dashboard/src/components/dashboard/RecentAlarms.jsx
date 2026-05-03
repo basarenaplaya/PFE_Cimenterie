@@ -54,7 +54,7 @@ export function RecentAlarms() {
         ) : null}
 
         {error ? (
-          <div className="pb-3 text-xs font-medium text-amber-600 dark:text-amber-300">Live sync delayed: showing latest cached records.</div>
+          <div className="pb-3 text-xs font-medium text-amber-600 dark:text-amber-300">Showing cached data.</div>
         ) : null}
 
         <Table>

@@ -61,10 +61,7 @@ export default function MachineViewPage() {
     <div className="w-full space-y-6">
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Machine View</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Live PLC surface is served with the dashboard (same host/port); the API and PLC logic stay
-          on the backend.
-        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">On-site PLC Realtime view.</p>
       </section>
 
       <section className="dashboard-enter" style={{ animationDelay: "120ms" }}>
@@ -72,10 +69,6 @@ export default function MachineViewPage() {
           <CardHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-base">Live PLC Surface</CardTitle>
-              <CardDescription>
-                Embedded SCADA uses a postMessage handshake (no token in the iframe URL). External
-                tab keeps an optional legacy hash for standalone access.
-              </CardDescription>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">

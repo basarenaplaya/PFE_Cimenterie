@@ -111,9 +111,7 @@ export default function ProfilePage() {
     <div className="space-y-6">
       <section className="dashboard-enter" style={{ animationDelay: "40ms" }}>
         <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Profile</h2>
-        <p className="text-sm text-slate-600 dark:text-slate-300">
-          Manage your account identity, avatar, and credential security.
-        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">Name, avatar, password.</p>
       </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-3">
@@ -157,7 +155,7 @@ export default function ProfilePage() {
             <Card className="border-slate-200/80 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/70">
               <CardHeader>
                 <CardTitle className="text-base">Profile Details</CardTitle>
-                <CardDescription>Update your display identity for this control room.</CardDescription>
+                <CardDescription>Name and avatar URL.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4" onSubmit={handleProfileSave}>
@@ -198,7 +196,7 @@ export default function ProfilePage() {
             <Card className="border-slate-200/80 bg-white/80 shadow-sm backdrop-blur dark:border-slate-800 dark:bg-slate-900/70">
               <CardHeader>
                 <CardTitle className="text-base">Credential Security</CardTitle>
-                <CardDescription>Change your password with full policy enforcement.</CardDescription>
+                <CardDescription>8+ chars, upper, lower, number, symbol.</CardDescription>
               </CardHeader>
               <CardContent>
                 <form className="space-y-4" onSubmit={handlePasswordSave}>

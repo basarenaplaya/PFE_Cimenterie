@@ -8,7 +8,7 @@ async function logAuditAction({ userId, action, ipAddress }) {
   );
 }
 
-async function listAuditLogs({ page = 1, limit = 20, action, userId }) {
+async function listAuditLogs({ page = 1, limit = 20, action, userId, startDate, endDate }) {
   const offset = (page - 1) * limit;
   const conditions = [];
   const params = [];
@@ -21,6 +21,16 @@ async function listAuditLogs({ page = 1, limit = 20, action, userId }) {
   if (userId) {
     conditions.push("al.user_id = ?");
     params.push(userId);
+  }
+
+  if (startDate) {
+    conditions.push("al.timestamp >= ?");
+    params.push(startDate);
+  }
+
+  if (endDate) {
+    conditions.push("al.timestamp <= ?");
+    params.push(endDate);
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";

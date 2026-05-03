@@ -123,3 +123,7 @@ Authorization: Bearer {{adminToken}}
 ### Audit logs should include all create/update/delete actions and return meta pagination
 GET {{baseUrl}}/admin/audit-logs?page=1&limit=50&action=ADMIN_
 Authorization: Bearer {{adminToken}}
+
+### Audit logs with ISO date range on timestamp
+GET {{baseUrl}}/admin/audit-logs?page=1&limit=20&startDate=2026-04-01T00:00:00.000Z&endDate=2026-04-30T23:59:59.999Z
+Authorization: Bearer {{adminToken}}

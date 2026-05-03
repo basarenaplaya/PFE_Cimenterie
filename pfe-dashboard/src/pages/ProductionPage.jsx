@@ -10,9 +10,7 @@ export default function ProductionPage() {
         <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Production Analytics</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-300">
-              Real-time packing throughput and bag quality indicators.
-            </p>
+            <p className="text-sm text-slate-600 dark:text-slate-300">Bags, rates, and money impact.</p>
           </div>
           <ProductionPricingDialogTrigger />
         </div>
