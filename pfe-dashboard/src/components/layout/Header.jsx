@@ -73,7 +73,7 @@ export function Header({
   }
 
   return (
-    <header className="header-safe sticky top-0 z-30 flex min-h-16 w-full items-center justify-between border-b border-slate-200/80 bg-white/80 px-3 py-2 backdrop-blur-md sm:px-6 sm:py-0 dark:border-slate-800/80 dark:bg-slate-950/80">
+    <header className="header-safe relative z-30 flex min-h-16 w-full shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/80 px-3 py-2 backdrop-blur-md sm:px-6 sm:py-0 dark:border-slate-800/80 dark:bg-slate-950/80">
       <div className="flex min-w-0 items-center gap-2 sm:gap-4">
         <Button
           variant="ghost"
@@ -134,7 +134,7 @@ export function Header({
 
         <div className="flex items-center gap-2">
           {isAdmin ? (
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="relative inline-flex rounded-full">
                   {adminUnreadCount > 0 ? (
@@ -144,7 +144,11 @@ export function Header({
                   <span className="sr-only">Notifications</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-80 max-h-[min(22rem,70vh)] overflow-y-auto p-0">
+              <DropdownMenuContent
+                align="end"
+                className="w-80 max-h-[min(22rem,70vh)] overflow-y-auto p-0"
+                onCloseAutoFocus={(e) => e.preventDefault()}
+              >
                 <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2 dark:border-slate-800">
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">Notifications</span>
                   {adminUnreadCount > 0 ? (
@@ -202,7 +206,7 @@ export function Header({
             <span className="sr-only">Toggle theme</span>
           </Button>
 
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
@@ -214,7 +218,7 @@ export function Header({
                 <span className="hidden max-w-32 truncate sm:inline">{user?.full_name || user?.username || "Session"}</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60">
+            <DropdownMenuContent align="end" className="w-60" onCloseAutoFocus={(e) => e.preventDefault()}>
               <DropdownMenuLabel className="space-y-1">
                 <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
                   {user?.full_name || user?.username || "Authenticated User"}
