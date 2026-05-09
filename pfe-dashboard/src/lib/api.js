@@ -12,7 +12,10 @@ function pageHostnameIsLoopback() {
 
 /**
  * Resolves the API origin for `fetch`.
- * - Dev or LAN: prefer same-origin (`""`) so Vite proxies `/api` to the backend.
+ * - Dev: same-origin (`""`) so Vite proxies `/api` to the backend.
+ * - Production in a browser: same-origin so Docker/nginx on :80 (or any host) can proxy `/api`
+ *   without cross-origin + CORS (loopback on :80 used to default to `http://localhost:3000`,
+ *   which broke when `CORS_ORIGIN` only allowed the dev dashboard origin).
  * - If `VITE_API_BASE_URL` points at localhost but the app is opened via LAN IP, localhost would
  *   target the wrong machine; we fall back to same-origin in that case.
  */
@@ -39,7 +42,7 @@ export function getResolvedApiBaseUrl() {
     return ""
   }
 
-  if (typeof window !== "undefined" && !pageHostnameIsLoopback()) {
+  if (typeof window !== "undefined") {
     return ""
   }
 

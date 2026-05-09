@@ -7,6 +7,7 @@ let warnedMissingLastLoginAt = false;
 /**
  * Whether `users.last_login_at` exists (cached for process lifetime).
  * Lets the API run before migration 003 is applied; run the migration for full behavior.
+ * Fresh Docker installs: `users.last_login_at` is included in `pfe-backend/db/init/01_schema.sql`.
  */
 async function usersHasLastLoginAtColumn() {
   if (usersLastLoginAtResolved !== null) {

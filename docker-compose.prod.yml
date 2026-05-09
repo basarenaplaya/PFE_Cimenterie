@@ -23,6 +23,7 @@ services:
       - --innodb_buffer_pool_size=256M
     volumes:
       - mariadb_data:/var/lib/mysql
+      - ./pfe-backend/db/init:/docker-entrypoint-initdb.d:ro
     networks:
       - internal
     healthcheck:
@@ -84,3 +85,4 @@ networks:
 
 volumes:
   mariadb_data:
+
