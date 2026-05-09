@@ -1,8 +1,9 @@
 ﻿# Production stack for factory-edge hosts (e.g. Raspberry Pi 4, 2GB RAM).
-# Provide a `.env` in this directory before `docker compose up`.
+# Single config: copy `.env.example` to `.env` in this directory before `docker compose up`.
 #
 # Published ports: 80 (dashboard + proxied /api and /socket.io), 3000 (direct API/WebSocket).
 # MariaDB is reachable only on the internal bridge network (3306 not published).
+# Backend also reads repo-root `.env` via `env_file`; values below override DB + listen for Docker only.
 
 services:
   db:
@@ -43,6 +44,8 @@ services:
     init: true
     security_opt:
       - no-new-privileges:true
+    env_file:
+      - .env
     ports:
       - "3000:3000"
     environment:
@@ -54,8 +57,6 @@ services:
       DB_USER: ${MYSQL_USER}
       DB_PASSWORD: ${MYSQL_PASSWORD}
       DB_NAME: ${MYSQL_DATABASE}
-      JWT_SECRET: ${JWT_SECRET:?}
-      CORS_ORIGIN: ${CORS_ORIGIN:-*}
     depends_on:
       db:
         condition: service_healthy

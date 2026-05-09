@@ -1,18 +1,27 @@
+const path = require("path");
 const dotenv = require("dotenv");
 
-dotenv.config();
+// Single repo-root `.env` for Docker + local; optional `pfe-backend/.env` fills any missing keys.
+const rootEnvPath = path.resolve(__dirname, "..", "..", "..", ".env");
+const backendEnvPath = path.resolve(__dirname, "..", "..", ".env");
+dotenv.config({ path: rootEnvPath });
+dotenv.config({ path: backendEnvPath });
 
-const requiredKeys = [
-  "DB_HOST",
-  "DB_USER",
-  "DB_NAME",
-  "JWT_SECRET",
-];
+const dbUser = process.env.DB_USER || process.env.MYSQL_USER;
+const dbName = process.env.DB_NAME || process.env.MYSQL_DATABASE;
+const dbPassword =
+  process.env.DB_PASSWORD !== undefined ? process.env.DB_PASSWORD : process.env.MYSQL_PASSWORD || "";
 
-const missingKeys = requiredKeys.filter((key) => process.env[key] === undefined);
+const missingPieces = [];
+if (!process.env.DB_HOST) missingPieces.push("DB_HOST");
+if (!dbUser) missingPieces.push("DB_USER or MYSQL_USER");
+if (!dbName) missingPieces.push("DB_NAME or MYSQL_DATABASE");
+if (process.env.JWT_SECRET === undefined || String(process.env.JWT_SECRET).trim() === "") {
+  missingPieces.push("JWT_SECRET");
+}
 
-if (missingKeys.length > 0) {
-  throw new Error(`Missing required environment variables: ${missingKeys.join(", ")}`);
+if (missingPieces.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingPieces.join(", ")}`);
 }
 
 const toInt = (value, fallback) => {
@@ -72,9 +81,9 @@ const env = {
   bindHost,
   dbHost: process.env.DB_HOST,
   dbPort: toInt(process.env.DB_PORT, 3306),
-  dbUser: process.env.DB_USER,
-  dbPassword: process.env.DB_PASSWORD || "",
-  dbName: process.env.DB_NAME,
+  dbUser,
+  dbPassword,
+  dbName,
   dbConnectionLimit: toInt(process.env.DB_CONNECTION_LIMIT, 10),
   jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "8h",
