@@ -78,13 +78,6 @@ async function registerUser({ username, password, full_name, role, ipAddress }) 
   const normalizedUsername = sanitized.username.toLowerCase();
   const requestedRole = role || "OPERATOR";
 
-  if (requestedRole === "ADMIN" && !env.allowAdminBootstrap) {
-    throw new HttpError(
-      403,
-      "Admin bootstrap registration is disabled. Set ALLOW_ADMIN_BOOTSTRAP=true to enable it temporarily."
-    );
-  }
-
   const existingUser = await findUserWithPasswordByUsername(normalizedUsername);
   if (existingUser) {
     await writeAuditLog(existingUser.id, "AUTH_REGISTER_FAIL_DUPLICATE_USERNAME", ipAddress);

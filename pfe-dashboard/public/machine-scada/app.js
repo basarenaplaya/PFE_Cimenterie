@@ -494,15 +494,24 @@ function clearPallet() {
 
 function resetBagStates() {
     for (let i = 0; i < state.bags.length; i++) {
-        state.bags[i].occupied = false;
-        state.bags[i].trackingLive = false;
-        state.bags[i].readyToDrop = false;
-        state.bags[i].weight = 0;
-        state.bags[i].snapshotWeight = 0;
-        clearSpoutVisual(i);
+        clearSpoutBagPresence(i);
     }
 
     state.activeSpout = null;
+}
+
+/** Clears one spout slot to match PLC / UI (hidden bag, zero weight, empty card). */
+function clearSpoutBagPresence(index) {
+    const bag = state.bags[index];
+    if (!bag) {
+        return;
+    }
+    bag.occupied = false;
+    bag.trackingLive = false;
+    bag.readyToDrop = false;
+    bag.weight = 0;
+    bag.snapshotWeight = 0;
+    clearSpoutVisual(index);
 }
 
 function applyTelemetry(plcData) {
@@ -602,6 +611,27 @@ function syncTargetControlsFromPlc() {
 }
 
 function syncActiveSpoutFromPlc(plcSpoutIndex) {
+    // No valid DB4 Active_Spout_ID (0 or out of range): same hand-off as switching spouts —
+    // the last active slot must go to `readyToDrop` so `processProducedCounter` + `performDrop` still run.
+    if (plcSpoutIndex === null) {
+        const previousActive = state.activeSpout;
+
+        if (previousActive !== null) {
+            markBagReadyForDrop(previousActive);
+        }
+
+        state.activeSpout = null;
+
+        // Stray live fills with no tracked active index (desync): PLC says no station, clear them.
+        for (let i = 0; i < state.bags.length; i++) {
+            if (state.bags[i].trackingLive) {
+                clearSpoutBagPresence(i);
+            }
+        }
+
+        return;
+    }
+
     const previousActive = state.activeSpout;
 
     if (previousActive !== null && previousActive !== plcSpoutIndex) {
@@ -609,10 +639,6 @@ function syncActiveSpoutFromPlc(plcSpoutIndex) {
     }
 
     state.activeSpout = plcSpoutIndex;
-
-    if (plcSpoutIndex === null) {
-        return;
-    }
 
     const bag = state.bags[plcSpoutIndex];
     if (!bag) {

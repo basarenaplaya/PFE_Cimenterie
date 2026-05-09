@@ -16,7 +16,7 @@ const { validateBody } = require("../middleware/validate");
 
 const authRouter = express.Router();
 
-authRouter.post("/register", validateBody(registerSchema), register);
+authRouter.post("/register", verifyToken, verifyAdmin, validateBody(registerSchema), register);
 authRouter.post("/login", validateBody(loginSchema), login);
 authRouter.get("/me", verifyToken, me);
 authRouter.put("/me", verifyToken, validateBody(updateProfileSchema), updateMe);

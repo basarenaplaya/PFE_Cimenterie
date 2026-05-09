@@ -79,7 +79,6 @@ const env = {
   jwtSecret,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "8h",
   bcryptSaltRounds,
-  allowAdminBootstrap: toBool(process.env.ALLOW_ADMIN_BOOTSTRAP, false),
   corsOrigin: process.env.CORS_ORIGIN || "*",
   plcSimulator: toBool(process.env.PLC_SIMULATOR, false),
   plcIp: process.env.PLC_IP || "127.0.0.1",

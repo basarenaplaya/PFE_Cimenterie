@@ -5,8 +5,9 @@
 ### Health Check
 GET {{baseUrl}}/health
 
-### Register OPERATOR user
+### Register OPERATOR user (requires ADMIN JWT — same as /api/admin/users)
 POST {{baseUrl}}/auth/register
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
@@ -15,8 +16,9 @@ Content-Type: application/json
   "full_name": "Operator One"
 }
 
-### Register ADMIN user (works only when ALLOW_ADMIN_BOOTSTRAP=true)
+### Register ADMIN user (requires ADMIN JWT)
 POST {{baseUrl}}/auth/register
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
