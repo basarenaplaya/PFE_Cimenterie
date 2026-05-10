@@ -2,7 +2,11 @@ const { executeQuery } = require("../config/database");
 const { HttpError } = require("../utils/httpError");
 const { buildPaginationMeta } = require("../utils/pagination");
 const { emitAdminDashboardNotification } = require("./socketService");
-const { TELEMETRY_ALARM_KEYS, describeAlarmForLog } = require("../constants/alarmTelemetry");
+const {
+  TELEMETRY_ALARM_KEYS,
+  describeAlarmForLog,
+  cloneTelemetryAlarmsShape,
+} = require("../constants/alarmTelemetry");
 
 function mapAlarmLog(row) {
   return {
@@ -65,6 +69,32 @@ async function startAlarm({ alarmCode, description, startTime = new Date() }) {
     id: result.insertId,
     alarm_code: code,
   };
+}
+
+/**
+ * Align open alarm rows with the current PLC snapshot (used after backend start or PLC reconnect).
+ * Without this, alarms that cleared while the API was down / link was lost stay "Active" forever
+ * because edge-detection never sees false→true→false — only the latest steady state.
+ */
+async function reconcileAlarmsWithTelemetry(telemetry) {
+  const snapshot = cloneTelemetryAlarmsShape(telemetry?.Alarms);
+
+  for (const alarmCode of TELEMETRY_ALARM_KEYS) {
+    const active = Boolean(snapshot[alarmCode]);
+
+    if (active) {
+      await startAlarm({
+        alarmCode,
+        description: describeAlarmForLog(alarmCode),
+        startTime: new Date(),
+      });
+    } else {
+      await clearAlarm({
+        alarmCode,
+        endTime: new Date(),
+      });
+    }
+  }
 }
 
 async function clearAlarm({ alarmCode, endTime = new Date() }) {
@@ -165,4 +195,5 @@ module.exports = {
   listAlarmLogs,
   startAlarm,
   clearAlarm,
+  reconcileAlarmsWithTelemetry,
 };

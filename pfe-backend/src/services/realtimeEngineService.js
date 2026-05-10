@@ -10,7 +10,7 @@ const {
   initializeRealtimeCounterState,
   setCounterBaseline,
 } = require("./productionService");
-const { startAlarm, clearAlarm } = require("./alarmService");
+const { startAlarm, clearAlarm, reconcileAlarmsWithTelemetry } = require("./alarmService");
 const { upsertMachineStatus } = require("./machineStatusService");
 const { plcService } = require("./plcService");
 const { emitRealtimeStatus, emitTelemetryUpdate } = require("./socketService");
@@ -22,6 +22,8 @@ const ALARM_CODES = TELEMETRY_ALARM_KEYS;
 let engineRunning = false;
 let lastObservedCounter = null;
 let previousAlarms = null;
+/** Tracks PLC connection edge so we re-sync alarm_logs after reconnect. */
+let lastPlcConnected = false;
 let telemetryListener;
 let statusListener;
 let errorListener;
@@ -68,6 +70,7 @@ async function processProductionHandshake(telemetry) {
 
 async function processAlarmTransitions(telemetry) {
   if (!previousAlarms) {
+    await reconcileAlarmsWithTelemetry(telemetry);
     previousAlarms = cloneAlarms(telemetry.Alarms);
     return;
   }
@@ -119,15 +122,22 @@ async function handleTelemetry(telemetry) {
 
 async function handleStatus(status) {
   try {
+    const connected = Boolean(status.connected);
+
     emitRealtimeStatus({
-      running: Boolean(status.connected),
-      connected: Boolean(status.connected),
+      running: connected,
+      connected,
       simulator: Boolean(env.plcSimulator),
       pollIntervalMs: Number(env.plcPollIntervalMs || 500),
       lastTelemetryAt: lastTelemetry ? new Date().toISOString() : null,
     });
 
-    if (!status.connected) {
+    if (connected && !lastPlcConnected) {
+      previousAlarms = null;
+    }
+    lastPlcConnected = connected;
+
+    if (!connected) {
       await upsertMachineStatus({
         machineMode: lastTelemetry ? lastTelemetry.Machine_Mode : 0,
         isRunning: false,
@@ -217,6 +227,7 @@ async function stopRealtimeEngine() {
   engineRunning = false;
   lastObservedCounter = null;
   previousAlarms = null;
+  lastPlcConnected = false;
   lastTelemetry = null;
 
   emitRealtimeStatus({ running: false });
