@@ -12,6 +12,32 @@ import {
 
 const BASE_ROLES = ["ADMIN", "OPERATOR"]
 
+/** Path prefixes for routes gated to ADMIN only in App.jsx */
+const ADMIN_ONLY_ROUTE_PREFIXES = ["/admin", "/overview", "/production", "/maintenance"]
+
+export function getDefaultDashboardPath(role) {
+  if (role === "ADMIN") return "/overview"
+  if (role === "OPERATOR") return "/machine-view"
+  return "/"
+}
+
+export function isAdminOnlyPath(pathname) {
+  if (!pathname || pathname === "/") return false
+  return ADMIN_ONLY_ROUTE_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  )
+}
+
+/** Safe path after auth: operators are not sent to admin-only routes (see App.jsx). */
+export function resolvePostAuthDestination({ savedPathname, role }) {
+  const fallback = getDefaultDashboardPath(role)
+  if (!savedPathname || savedPathname === "/login") return fallback
+  if (role === "ADMIN") return savedPathname
+  if (role === "OPERATOR" && isAdminOnlyPath(savedPathname)) return fallback
+  if (role !== "ADMIN" && role !== "OPERATOR" && isAdminOnlyPath(savedPathname)) return fallback
+  return savedPathname
+}
+
 export const dashboardNavigation = [
   {
     name: "Overview",

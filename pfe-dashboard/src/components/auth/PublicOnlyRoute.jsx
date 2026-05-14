@@ -1,8 +1,9 @@
 import { Navigate, Outlet } from "react-router-dom"
 import { useAuth } from "@/hooks/useAuth"
+import { getDefaultDashboardPath } from "@/lib/navigation"
 
 export function PublicOnlyRoute() {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, role } = useAuth()
 
   if (isLoading) {
     return (
@@ -15,7 +16,7 @@ export function PublicOnlyRoute() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/overview" replace />
+    return <Navigate to={getDefaultDashboardPath(role)} replace />
   }
 
   return <Outlet />

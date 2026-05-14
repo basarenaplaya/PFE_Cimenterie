@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { useAuth } from "@/hooks/useAuth"
 import { APP_BRAND_NAME, APP_LOGO_SRC } from "@/lib/branding"
+import { resolvePostAuthDestination } from "@/lib/navigation"
 
 function validateCredentials({ username, password }) {
   const errors = {}
@@ -34,7 +35,7 @@ export default function LoginPage() {
   const reduceMotion = useReducedMotion()
   const navigate = useNavigate()
   const location = useLocation()
-  const { login, isAuthenticated, isLoading } = useAuth()
+  const { login, isAuthenticated, isLoading, role } = useAuth()
 
   const [form, setForm] = useState({ username: "", password: "" })
   const [fieldErrors, setFieldErrors] = useState({})
@@ -42,8 +43,12 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const redirectPath = useMemo(
-    () => location.state?.from?.pathname || "/overview",
-    [location.state]
+    () =>
+      resolvePostAuthDestination({
+        savedPathname: location.state?.from?.pathname,
+        role,
+      }),
+    [location.state, role]
   )
 
   useEffect(() => {
@@ -83,12 +88,16 @@ export default function LoginPage() {
 
     setIsSubmitting(true)
     try {
-      await login({
+      const loggedInUser = await login({
         username: normalizedUsername,
         password: form.password,
       })
 
-      navigate(redirectPath, { replace: true })
+      const nextPath = resolvePostAuthDestination({
+        savedPathname: location.state?.from?.pathname,
+        role: loggedInUser?.role ?? null,
+      })
+      navigate(nextPath, { replace: true })
     } catch (error) {
       setSubmitError(error?.message || "Unable to sign in right now.")
     } finally {
