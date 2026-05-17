@@ -4,12 +4,21 @@ const { buildPaginationMeta } = require("../utils/pagination");
 const { sanitizeFields } = require("../utils/sanitize");
 const { logAuditAction } = require("./auditService");
 
+/** mysql2 returns LONGBLOB as Buffer; JSON would otherwise emit { type: "Buffer", data: [...] } and break the UI. */
+function snapshotFromRow(value) {
+  if (value == null || value === "") return null;
+  if (Buffer.isBuffer(value)) return value.toString("utf8");
+  if (value instanceof Uint8Array) return Buffer.from(value).toString("utf8");
+  if (typeof value === "string") return value;
+  return null;
+}
+
 function mapCamera(row, { includeSnapshot = true } = {}) {
   return {
     id: row.id,
     cam_name: row.cam_name,
     ip_url: row.ip_url,
-    last_snapshot: includeSnapshot ? row.last_snapshot ?? null : null,
+    last_snapshot: includeSnapshot ? snapshotFromRow(row.last_snapshot) ?? null : null,
     added_by: row.added_by,
     added_by_username: row.added_by_username || null,
   };
