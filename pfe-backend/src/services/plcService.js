@@ -30,10 +30,15 @@ const PLC_COMMAND_MAP = Object.freeze({
   CMD_Presence_Sac_Web: "DB4,X0.4",
   CMD_Arret_Urgence_Web: "DB4,X0.5",
   CMD_Reset_Alarmes: "DB4,X0.6",
+  CMD_Heartbeat_Web: "DB4,X35.0",
   Consigne_Poids: "DB4,REAL8",
 });
 
 const PLC_READ_ALIASES = Object.freeze(Object.keys(PLC_MEMORY_MAP));
+
+/** PLC watchdog: DB4, offset 35.0, Bool — server liveness pulse (real PLC only). */
+const HEARTBEAT_COMMAND_ALIAS = "CMD_Heartbeat_Web";
+const HEARTBEAT_INTERVAL_MS = 2000;
 
 function randomInRange(min, max) {
   return Math.random() * (max - min) + min;
@@ -182,6 +187,7 @@ class PlcService extends EventEmitter {
     this._writeQueue = Promise.resolve();
     this._readInFlight = false;
     this.lastTelemetry = null;
+    this._heartbeatTimer = null;
 
     this._simState = {
       Poids_Reel_Web: 0,
@@ -264,6 +270,7 @@ class PlcService extends EventEmitter {
 
   async disconnect() {
     this._stopping = true;
+    this._stopHeartbeat();
 
     if (this._pollTimer) {
       clearInterval(this._pollTimer);
@@ -308,6 +315,8 @@ class PlcService extends EventEmitter {
   }
 
   async _connectReal() {
+    this._stopHeartbeat();
+
     const nodes7 = require("nodes7");
 
     this._client = new nodes7();
@@ -338,6 +347,9 @@ class PlcService extends EventEmitter {
     await this._emitCurrentTelemetry();
 
     console.log(`[plcService] Connected to PLC ${this.plcIp}:${this.plcPort}`);
+    if (!this._stopping) {
+      this._startHeartbeat();
+    }
   }
 
   async _readRealSnapshot() {
@@ -409,6 +421,36 @@ class PlcService extends EventEmitter {
       this.emit("error", error);
     } finally {
       this._readInFlight = false;
+    }
+  }
+
+  _stopHeartbeat() {
+    if (this._heartbeatTimer != null) {
+      clearInterval(this._heartbeatTimer);
+      this._heartbeatTimer = null;
+    }
+  }
+
+  _startHeartbeat() {
+    this._stopHeartbeat();
+    if (this.simulator || this._stopping) {
+      return;
+    }
+
+    this._heartbeatTimer = setInterval(() => {
+      void this._pulsePlcHeartbeat();
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  async _pulsePlcHeartbeat() {
+    if (this.simulator || this._stopping || !this._connected || !this._client) {
+      return;
+    }
+
+    try {
+      await this.writeTag(HEARTBEAT_COMMAND_ALIAS, true);
+    } catch {
+      // writeTag / _writeOnce already mark disconnected and schedule reconnect
     }
   }
 
@@ -492,6 +534,10 @@ class PlcService extends EventEmitter {
       return;
     }
 
+    if (alias === "CMD_Heartbeat_Web") {
+      return;
+    }
+
     if (alias === "Consigne_Poids") {
       const nextTarget = Number.parseFloat(value);
       if (Number.isFinite(nextTarget) && nextTarget > 0) {
@@ -507,6 +553,9 @@ class PlcService extends EventEmitter {
     }
 
     this._connected = nextStatus;
+    if (!nextStatus && !this.simulator) {
+      this._stopHeartbeat();
+    }
     this.emit("status", { connected: nextStatus, ts: Date.now() });
   }
 
