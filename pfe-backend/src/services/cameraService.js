@@ -4,12 +4,28 @@ const { buildPaginationMeta } = require("../utils/pagination");
 const { sanitizeFields } = require("../utils/sanitize");
 const { logAuditAction } = require("./auditService");
 
-/** mysql2 returns LONGBLOB as Buffer; JSON would otherwise emit { type: "Buffer", data: [...] } and break the UI. */
+/**
+ * Normalize LONGBLOB / driver shapes into a UTF-8 data URL string for JSON.
+ * mysql2 often returns Buffer; some stacks return typed arrays or Node's serialized Buffer shape.
+ */
 function snapshotFromRow(value) {
   if (value == null || value === "") return null;
-  if (Buffer.isBuffer(value)) return value.toString("utf8");
-  if (value instanceof Uint8Array) return Buffer.from(value).toString("utf8");
-  if (typeof value === "string") return value;
+  if (typeof value === "string") {
+    const trimmed = value.trim().replace(/^\uFEFF/, "");
+    return trimmed.length ? trimmed : null;
+  }
+  if (Buffer.isBuffer(value)) {
+    return value.toString("utf8");
+  }
+  if (ArrayBuffer.isView(value)) {
+    return Buffer.from(value.buffer, value.byteOffset, value.byteLength).toString("utf8");
+  }
+  if (value instanceof ArrayBuffer) {
+    return Buffer.from(value).toString("utf8");
+  }
+  if (typeof value === "object" && value.type === "Buffer" && Array.isArray(value.data)) {
+    return Buffer.from(value.data).toString("utf8");
+  }
   return null;
 }
 
