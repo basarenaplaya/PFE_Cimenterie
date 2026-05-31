@@ -2,6 +2,10 @@
 const DEFAULT_TARGET_WEIGHT_KG = 50;
 const MIN_TARGET_WEIGHT_KG = 5;
 const MAX_TARGET_WEIGHT_KG = 100;
+/** Below this live weight (kg), treat the scale as empty after PLC sensor reset. */
+const IDLE_WEIGHT_KG = 3;
+/** Bump when reconcile logic changes so browsers reload app.js after deploy. */
+const SCADA_BUILD_TAG = '20260523-bec-sync';
 
 const COMMANDS = {
     modeLocal: 'cmd_mode_local',
@@ -175,6 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         log('Authentification: en attente du tableau de bord (postMessage) ou jeton URL (#token=).');
     }
+    log(`SCADA ${SCADA_BUILD_TAG}`);
     updateUI();
 });
 
@@ -500,6 +505,55 @@ function resetBagStates() {
     state.activeSpout = null;
 }
 
+function hasAnyOccupiedSpout() {
+    return state.bags.some((bag) => bag.occupied);
+}
+
+/**
+ * PLC line looks empty: scale near zero and filling motors off.
+ * Active_Spout_ID may still be 1..8 in DB4 after sensor reset — do not require null index.
+ */
+function isMachineLineCleared() {
+    if (state.liveWeight >= IDLE_WEIGHT_KG) {
+        return false;
+    }
+
+    // During/after fault, sensors reset with near-zero weight — spouts are free even if
+    // Active_Spout_ID or motor bits lag in DB4 for a few cycles.
+    if (state.faultGlobal) {
+        return true;
+    }
+
+    return !state.motorEnsacheuse && !state.motorBande;
+}
+
+function clearAllSpoutUi(reason) {
+    if (!hasAnyOccupiedSpout()) {
+        return false;
+    }
+
+    resetBagStates();
+    state.pendingDrops = 0;
+    log(reason);
+    return true;
+}
+
+/** Mirror live PLC idle state: clear stale BEC graphics without page refresh. */
+function reconcileSpoutUiFromPlc(plcSpoutIndex) {
+    if (!hasAnyOccupiedSpout()) {
+        return;
+    }
+
+    if (isMachineLineCleared()) {
+        clearAllSpoutUi('Becs synchronises avec PLC (ligne libre)');
+        return;
+    }
+
+    if (plcSpoutIndex === null && state.liveWeight < IDLE_WEIGHT_KG) {
+        clearAllSpoutUi('Becs synchronises (aucun bec actif)');
+    }
+}
+
 /** Clears one spout slot to match PLC / UI (hidden bag, zero weight, empty card). */
 function clearSpoutBagPresence(index) {
     const bag = state.bags[index];
@@ -529,12 +583,6 @@ function applyTelemetry(plcData) {
         syncTargetControlsFromPlc();
     }
 
-    const plcActiveSpout = parsePlcSpoutIndex(plcData[DATA_KEYS.activeSpout]);
-    syncActiveSpoutFromPlc(plcActiveSpout);
-
-    const nextProducedCounter = Math.max(0, Math.floor(asNumber(plcData[DATA_KEYS.bagsProducedCounter])));
-    processProducedCounter(nextProducedCounter);
-
     state.modeLocal = asBool(plcData[DATA_KEYS.modeLocal]);
     state.modeCentral = asBool(plcData[DATA_KEYS.modeCentral]);
     state.motorEnsacheuse = asBool(plcData[DATA_KEYS.motorEnsacheuse]);
@@ -551,7 +599,23 @@ function applyTelemetry(plcData) {
         || state.faults.capteur
         || state.faults.moteur
         || state.faults.dejoncteur;
+    const faultWasActive = state.faultGlobal;
     state.faultGlobal = asBool(plcData[DATA_KEYS.defaut]) || anyDetailedFault;
+
+    const plcActiveSpout = parsePlcSpoutIndex(plcData[DATA_KEYS.activeSpout]);
+
+    if (faultWasActive && !state.faultGlobal) {
+        clearAllSpoutUi('Becs synchronises apres acquittement');
+    }
+
+    reconcileSpoutUiFromPlc(plcActiveSpout);
+
+    syncActiveSpoutFromPlc(plcActiveSpout);
+
+    const nextProducedCounter = Math.max(0, Math.floor(asNumber(plcData[DATA_KEYS.bagsProducedCounter])));
+    processProducedCounter(nextProducedCounter);
+
+    reconcileSpoutUiFromPlc(plcActiveSpout);
 
     applyMotionFromState();
     updateUI();
@@ -613,6 +677,11 @@ function syncTargetControlsFromPlc() {
 function syncActiveSpoutFromPlc(plcSpoutIndex) {
     // No valid DB4 Active_Spout_ID (0 or out of range): same hand-off as switching spouts —
     // the last active slot must go to `readyToDrop` so `processProducedCounter` + `performDrop` still run.
+    if (isMachineLineCleared()) {
+        reconcileSpoutUiFromPlc(plcSpoutIndex);
+        return;
+    }
+
     if (plcSpoutIndex === null) {
         const previousActive = state.activeSpout;
 
@@ -702,9 +771,9 @@ function processProducedCounter(nextCounter) {
         state.pendingDrops += nextCounter - state.bagsProducedCounterPrev;
     } else if (nextCounter < state.bagsProducedCounterPrev) {
         state.pendingDrops = 0;
+        resetBagStates();
         if (nextCounter === 0) {
             document.querySelectorAll('.stacked-sac').forEach((node) => node.remove());
-            resetBagStates();
             state.sacCount = 0;
         }
     }
