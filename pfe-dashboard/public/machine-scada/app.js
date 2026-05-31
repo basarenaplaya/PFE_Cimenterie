@@ -2,10 +2,8 @@
 const DEFAULT_TARGET_WEIGHT_KG = 50;
 const MIN_TARGET_WEIGHT_KG = 5;
 const MAX_TARGET_WEIGHT_KG = 100;
-/** Below this live weight (kg), treat the scale as empty after PLC sensor reset. */
-const IDLE_WEIGHT_KG = 3;
-/** Bump when reconcile logic changes so browsers reload app.js after deploy. */
-const SCADA_BUILD_TAG = '20260523-bec-sync';
+/** Bump when spout mirror logic changes so browsers reload app.js after deploy. */
+const SCADA_BUILD_TAG = 'active-spout-mirror';
 
 const COMMANDS = {
     modeLocal: 'cmd_mode_local',
@@ -24,6 +22,7 @@ const DATA_KEYS = {
     motorEnsacheuse: 'motor_ensacheuse',
     motorBande: 'motor_bande',
     activeSpout: 'active_spout',
+    lastSpoutId: 'Last_Spout_ID',
     angle: 'angle',
     bagsProducedCounter: 'Bags_Produced_Counter',
     modeLocal: 'mode_local',
@@ -147,6 +146,7 @@ const state = {
     },
     sacCount: 0,
     activeSpout: null,
+    lastDropSpoutIndex: null,
     bags: Array.from({ length: 8 }, () => ({
         occupied: false,
         trackingLive: false,
@@ -505,55 +505,6 @@ function resetBagStates() {
     state.activeSpout = null;
 }
 
-function hasAnyOccupiedSpout() {
-    return state.bags.some((bag) => bag.occupied);
-}
-
-/**
- * PLC line looks empty: scale near zero and filling motors off.
- * Active_Spout_ID may still be 1..8 in DB4 after sensor reset — do not require null index.
- */
-function isMachineLineCleared() {
-    if (state.liveWeight >= IDLE_WEIGHT_KG) {
-        return false;
-    }
-
-    // During/after fault, sensors reset with near-zero weight — spouts are free even if
-    // Active_Spout_ID or motor bits lag in DB4 for a few cycles.
-    if (state.faultGlobal) {
-        return true;
-    }
-
-    return !state.motorEnsacheuse && !state.motorBande;
-}
-
-function clearAllSpoutUi(reason) {
-    if (!hasAnyOccupiedSpout()) {
-        return false;
-    }
-
-    resetBagStates();
-    state.pendingDrops = 0;
-    log(reason);
-    return true;
-}
-
-/** Mirror live PLC idle state: clear stale BEC graphics without page refresh. */
-function reconcileSpoutUiFromPlc(plcSpoutIndex) {
-    if (!hasAnyOccupiedSpout()) {
-        return;
-    }
-
-    if (isMachineLineCleared()) {
-        clearAllSpoutUi('Becs synchronises avec PLC (ligne libre)');
-        return;
-    }
-
-    if (plcSpoutIndex === null && state.liveWeight < IDLE_WEIGHT_KG) {
-        clearAllSpoutUi('Becs synchronises (aucun bec actif)');
-    }
-}
-
 /** Clears one spout slot to match PLC / UI (hidden bag, zero weight, empty card). */
 function clearSpoutBagPresence(index) {
     const bag = state.bags[index];
@@ -599,23 +550,15 @@ function applyTelemetry(plcData) {
         || state.faults.capteur
         || state.faults.moteur
         || state.faults.dejoncteur;
-    const faultWasActive = state.faultGlobal;
     state.faultGlobal = asBool(plcData[DATA_KEYS.defaut]) || anyDetailedFault;
 
+    state.lastDropSpoutIndex = parsePlcSpoutIndex(plcData[DATA_KEYS.lastSpoutId]);
+
     const plcActiveSpout = parsePlcSpoutIndex(plcData[DATA_KEYS.activeSpout]);
-
-    if (faultWasActive && !state.faultGlobal) {
-        clearAllSpoutUi('Becs synchronises apres acquittement');
-    }
-
-    reconcileSpoutUiFromPlc(plcActiveSpout);
-
     syncActiveSpoutFromPlc(plcActiveSpout);
 
     const nextProducedCounter = Math.max(0, Math.floor(asNumber(plcData[DATA_KEYS.bagsProducedCounter])));
     processProducedCounter(nextProducedCounter);
-
-    reconcileSpoutUiFromPlc(plcActiveSpout);
 
     applyMotionFromState();
     updateUI();
@@ -674,37 +617,22 @@ function syncTargetControlsFromPlc() {
     dom.targetInput.value = state.targetWeight.toFixed(1);
 }
 
+/**
+ * Paint rim/cards from DB4 Active_Spout_ID only (INT22 → active_spout).
+ * 0 = all becs empty; 1..8 = bag on that bec only.
+ */
 function syncActiveSpoutFromPlc(plcSpoutIndex) {
-    // No valid DB4 Active_Spout_ID (0 or out of range): same hand-off as switching spouts —
-    // the last active slot must go to `readyToDrop` so `processProducedCounter` + `performDrop` still run.
-    if (isMachineLineCleared()) {
-        reconcileSpoutUiFromPlc(plcSpoutIndex);
-        return;
-    }
-
     if (plcSpoutIndex === null) {
-        const previousActive = state.activeSpout;
-
-        if (previousActive !== null) {
-            markBagReadyForDrop(previousActive);
-        }
-
-        state.activeSpout = null;
-
-        // Stray live fills with no tracked active index (desync): PLC says no station, clear them.
-        for (let i = 0; i < state.bags.length; i++) {
-            if (state.bags[i].trackingLive) {
-                clearSpoutBagPresence(i);
-            }
-        }
-
+        resetBagStates();
         return;
     }
 
     const previousActive = state.activeSpout;
 
-    if (previousActive !== null && previousActive !== plcSpoutIndex) {
-        markBagReadyForDrop(previousActive);
+    for (let i = 0; i < state.bags.length; i++) {
+        if (i !== plcSpoutIndex) {
+            clearSpoutBagPresence(i);
+        }
     }
 
     state.activeSpout = plcSpoutIndex;
@@ -723,9 +651,7 @@ function syncActiveSpoutFromPlc(plcSpoutIndex) {
     bag.trackingLive = true;
     bag.readyToDrop = false;
     bag.weight = state.liveWeight;
-    if (bag.snapshotWeight <= 0) {
-        bag.snapshotWeight = state.liveWeight;
-    }
+    bag.snapshotWeight = state.liveWeight;
 
     showSpoutBag(plcSpoutIndex, true);
 }
@@ -744,20 +670,6 @@ function showSpoutBag(index, valveOn) {
     }
 
     drawBagWeight(index, state.bags[index]?.weight ?? state.liveWeight);
-    updateSpoutCardAppearance(index);
-}
-
-function markBagReadyForDrop(index) {
-    const bag = state.bags[index];
-    if (!bag || !bag.occupied) {
-        return;
-    }
-
-    bag.snapshotWeight = bag.weight > 0 ? bag.weight : state.liveWeight;
-    bag.trackingLive = false;
-    bag.readyToDrop = true;
-    const valve = document.getElementById(`v-${index}`);
-    if (valve) valve.classList.remove('valve-on');
     updateSpoutCardAppearance(index);
 }
 
@@ -784,12 +696,8 @@ function processProducedCounter(nextCounter) {
 
 function flushPendingDrops() {
     while (state.pendingDrops > 0) {
-        const index = state.bags.findIndex((bag) => bag.readyToDrop);
-        if (index < 0) {
-            break;
-        }
-
-        performDrop(index);
+        const index = state.lastDropSpoutIndex ?? state.activeSpout ?? 0;
+        performBeltDrop(index);
         state.pendingDrops -= 1;
     }
 }
@@ -819,19 +727,12 @@ function drawBagWeight(index, weight) {
     updateSpoutCardAppearance(index);
 }
 
-function performDrop(index) {
+/** Belt/palette animation only — rim presence comes from syncActiveSpoutFromPlc. */
+function performBeltDrop(index) {
     const bag = state.bags[index];
-    if (!bag || !bag.readyToDrop) return;
-
-    const finalWeight = bag.snapshotWeight > 0 ? bag.snapshotWeight : bag.weight;
-
-    bag.occupied = false;
-    bag.trackingLive = false;
-    bag.readyToDrop = false;
-    bag.weight = 0;
-    bag.snapshotWeight = 0;
-
-    clearSpoutVisual(index);
+    const finalWeight = bag && bag.snapshotWeight > 0
+        ? bag.snapshotWeight
+        : (bag && bag.weight > 0 ? bag.weight : state.liveWeight);
 
     state.sacCount += 1;
     dom.txtCount.textContent = String(state.sacCount);
