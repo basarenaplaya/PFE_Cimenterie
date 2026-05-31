@@ -18,8 +18,17 @@ const PLC_MEMORY_MAP = Object.freeze({
   Consigne_Poids: "DB4,REAL8",
   Angle_Ensacheuse: "DB4,REAL12",
   Active_Spout_ID: "DB4,INT22",
+  Fill_State: "DB4,INT24",
   Bags_Produced_Counter: "DB4,DINT26",
   Last_Spout_ID: "DB4,INT30",
+  Spout_1_Free: "DB4,X34.0",
+  Spout_2_Free: "DB4,X34.1",
+  Spout_3_Free: "DB4,X34.2",
+  Spout_4_Free: "DB4,X34.3",
+  Spout_5_Free: "DB4,X34.4",
+  Spout_6_Free: "DB4,X34.5",
+  Spout_7_Free: "DB4,X34.6",
+  Spout_8_Free: "DB4,X34.7",
 });
 
 const PLC_COMMAND_MAP = Object.freeze({
@@ -82,8 +91,19 @@ function normalizeTelemetry(values) {
   const defautMoteur = asBool(values.Defaut_Moteur);
   const defautDejoncteur = asBool(values.Defaut_Dejoncteur);
   const activeSpout = asInteger(values.Active_Spout_ID, 0);
+  const fillState = asInteger(values.Fill_State, 0);
   const counter = asInteger(values.Bags_Produced_Counter, 0);
   const lastSpoutId = asInteger(values.Last_Spout_ID, 0);
+  const spoutFree = {
+    spout_1_free: asBool(values.Spout_1_Free),
+    spout_2_free: asBool(values.Spout_2_Free),
+    spout_3_free: asBool(values.Spout_3_Free),
+    spout_4_free: asBool(values.Spout_4_Free),
+    spout_5_free: asBool(values.Spout_5_Free),
+    spout_6_free: asBool(values.Spout_6_Free),
+    spout_7_free: asBool(values.Spout_7_Free),
+    spout_8_free: asBool(values.Spout_8_Free),
+  };
   const angle = asFiniteNumber(values.Angle_Ensacheuse, 0);
   const machineMode = modeCentral ? 2 : modeLocal ? 1 : 0;
 
@@ -102,8 +122,10 @@ function normalizeTelemetry(values) {
     defaut_moteur: defautMoteur,
     defaut_dejoncteur: defautDejoncteur,
     active_spout: activeSpout,
+    fill_state: fillState,
     angle,
     Bags_Produced_Counter: counter,
+    ...spoutFree,
     _ts: Date.now(),
 
     // Canonical fields retained for backend services compatibility.
@@ -204,8 +226,17 @@ class PlcService extends EventEmitter {
       Defaut_Dejoncteur: false,
       Angle_Ensacheuse: 0,
       Active_Spout_ID: 1,
+      Fill_State: 1,
       Bags_Produced_Counter: 0,
       Last_Spout_ID: 1,
+      Spout_1_Free: false,
+      Spout_2_Free: true,
+      Spout_3_Free: true,
+      Spout_4_Free: true,
+      Spout_5_Free: true,
+      Spout_6_Free: true,
+      Spout_7_Free: true,
+      Spout_8_Free: true,
     };
   }
 
@@ -569,21 +600,19 @@ class PlcService extends EventEmitter {
     this._simState.Angle_Ensacheuse = Number((this._simState.Angle_Ensacheuse + 7.5).toFixed(2));
 
     if (this._simState.Poids_Reel_Web >= this._simState.Consigne_Poids) {
+      const droppedSpout = this._simState.Active_Spout_ID;
       this._simState.Poids_Reel_Web = this._simState.Consigne_Poids;
       this._simState.Bags_Produced_Counter += 1;
-
-      const jitter = randomInRange(-0.25, 0.25);
-      this._simState.Poids_Reel_Web = Number(
-        Math.max(0, this._simState.Consigne_Poids + jitter).toFixed(2)
-      );
-
-      this._simState.Last_Spout_ID = this._simState.Active_Spout_ID;
-
+      this._simState.Last_Spout_ID = droppedSpout;
       this._simState.Poids_Reel_Web = 0;
       this._simState.Consigne_Poids = Number(
         randomInRange(this.simTargetMin, this.simTargetMax).toFixed(2)
       );
-      this._simState.Active_Spout_ID = randomInt(1, 8);
+      this._simState.Active_Spout_ID = 0;
+      this._simState.Fill_State = 0;
+      for (let n = 1; n <= 8; n += 1) {
+        this._simState[`Spout_${n}_Free`] = true;
+      }
     }
 
     if (Math.random() < 0.02) {

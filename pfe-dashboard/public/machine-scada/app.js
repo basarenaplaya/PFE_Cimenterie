@@ -3,7 +3,7 @@ const DEFAULT_TARGET_WEIGHT_KG = 50;
 const MIN_TARGET_WEIGHT_KG = 5;
 const MAX_TARGET_WEIGHT_KG = 100;
 /** Bump when spout mirror logic changes so browsers reload app.js after deploy. */
-const SCADA_BUILD_TAG = 'active-spout-mirror';
+const SCADA_BUILD_TAG = 'active-spout-occupy';
 
 const COMMANDS = {
     modeLocal: 'cmd_mode_local',
@@ -554,8 +554,7 @@ function applyTelemetry(plcData) {
 
     state.lastDropSpoutIndex = parsePlcSpoutIndex(plcData[DATA_KEYS.lastSpoutId]);
 
-    const plcActiveSpout = parsePlcSpoutIndex(plcData[DATA_KEYS.activeSpout]);
-    syncActiveSpoutFromPlc(plcActiveSpout);
+    syncActiveSpoutFromPlc(plcData);
 
     const nextProducedCounter = Math.max(0, Math.floor(asNumber(plcData[DATA_KEYS.bagsProducedCounter])));
     processProducedCounter(nextProducedCounter);
@@ -617,26 +616,44 @@ function syncTargetControlsFromPlc() {
     dom.targetInput.value = state.targetWeight.toFixed(1);
 }
 
-/**
- * Paint rim/cards from DB4 Active_Spout_ID only (INT22 → active_spout).
- * 0 = all becs empty; 1..8 = bag on that bec only.
- */
-function syncActiveSpoutFromPlc(plcSpoutIndex) {
-    if (plcSpoutIndex === null) {
-        resetBagStates();
-        return;
+function readPlcActiveSpoutRaw(plcData) {
+    const legacy = plcData[DATA_KEYS.activeSpout];
+    if (legacy !== undefined && legacy !== null && legacy !== '') {
+        return legacy;
     }
+    if (plcData.Active_Spout_ID !== undefined && plcData.Active_Spout_ID !== null) {
+        return plcData.Active_Spout_ID;
+    }
+    return 0;
+}
 
+/** DB4 Spout_N_Free=false means bag present on that bec (matches PLC HMI). */
+function isPlcSpoutLocked(plcData, index0) {
+    const key = `spout_${index0 + 1}_free`;
+    if (!(key in plcData)) {
+        return true;
+    }
+    return !asBool(plcData[key]);
+}
+
+/**
+ * Paint rim/cards from Active_Spout_ID (INT22) when that spout is locked (not free).
+ * After fault/reset the PLC can leave Active_Spout_ID latched while Spout_N_Free=true.
+ */
+function syncActiveSpoutFromPlc(plcData) {
+    const plcSpoutIndex = parsePlcSpoutIndex(readPlcActiveSpoutRaw(plcData));
     const previousActive = state.activeSpout;
 
     for (let i = 0; i < state.bags.length; i++) {
-        if (i !== plcSpoutIndex) {
-            clearSpoutBagPresence(i);
-        }
+        clearSpoutBagPresence(i);
+    }
+    state.activeSpout = null;
+
+    if (plcSpoutIndex === null || !isPlcSpoutLocked(plcData, plcSpoutIndex)) {
+        return;
     }
 
     state.activeSpout = plcSpoutIndex;
-
     const bag = state.bags[plcSpoutIndex];
     if (!bag) {
         return;
