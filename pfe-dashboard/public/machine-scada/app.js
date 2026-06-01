@@ -177,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (accessToken) {
         setupSocket();
     } else {
-        log('Authentification: en attente du tableau de bord (postMessage) ou jeton URL (#token=).');
+        log('Authentication: waiting for dashboard (postMessage) or URL token (#token=).');
     }
     log(`SCADA ${SCADA_BUILD_TAG}`);
     updateUI();
@@ -294,7 +294,7 @@ function bindEvents() {
 
 function setupSocket() {
     if (typeof window.io !== 'function') {
-        log('Client Socket.IO indisponible');
+        log('Socket.IO client unavailable');
         return;
     }
 
@@ -322,7 +322,7 @@ function setupSocket() {
 
     socket.on('connect', () => {
         state.socketConnected = true;
-        log('Passerelle connectee');
+        log('Gateway connected');
         updateUI();
     });
 
@@ -331,7 +331,7 @@ function setupSocket() {
         state.connected = false;
         stopMachineVisuals();
         updateUI();
-        log(`Passerelle deconnectee: ${reason}`);
+        log(`Gateway disconnected: ${reason}`);
     });
 
     socket.on('connect_error', (error) => {
@@ -339,13 +339,13 @@ function setupSocket() {
         state.connected = false;
         stopMachineVisuals();
         updateUI();
-        log(`Erreur socket: ${error.message}`);
+        log(`Socket error: ${error.message}`);
     });
 
     socket.on('plc-status', (status) => {
         const nextConnected = Boolean(status && status.connected);
         if (state.connected !== nextConnected) {
-            log(nextConnected ? 'Communication PLC etablie' : 'Perte communication PLC');
+            log(nextConnected ? 'PLC communication established' : 'PLC communication lost');
         }
 
         state.connected = nextConnected;
@@ -374,7 +374,7 @@ async function setMode(mode) {
 
     try {
         await postMachineCommand(command);
-        log(`Mode ${mode} envoye`);
+        log(`Mode ${mode} sent`);
     } catch (error) {
         handlePostError(error, `Mode ${mode}`);
     }
@@ -382,56 +382,56 @@ async function setMode(mode) {
 
 async function marcheCentral() {
     if (!state.modeCentral || state.modeLocal) {
-        log('Commande MARCHE bloquee: mode non CENTRAL');
+        log('START command blocked: not in CENTRAL mode');
         return;
     }
 
     try {
         await postMachineCommand(COMMANDS.marche);
-        log('Commande MARCHE CENTRAL envoyee');
+        log('CENTRAL START command sent');
     } catch (error) {
-        handlePostError(error, 'MARCHE CENTRAL');
+        handlePostError(error, 'CENTRAL START');
     }
 }
 
 async function arretCentral() {
     if (!state.modeCentral || state.modeLocal) {
-        log('Commande ARRET bloquee: mode non CENTRAL');
+        log('STOP command blocked: not in CENTRAL mode');
         return;
     }
 
     try {
         await postMachineCommand(COMMANDS.arret);
-        log('Commande ARRET CENTRAL envoyee');
+        log('CENTRAL STOP command sent');
     } catch (error) {
-        handlePostError(error, 'ARRET CENTRAL');
+        handlePostError(error, 'CENTRAL STOP');
     }
 }
 
 async function declencherAU() {
     try {
         await postMachineCommand(COMMANDS.au);
-        log('Commande ARRET URGENCE envoyee');
+        log('EMERGENCY STOP command sent');
     } catch (error) {
-        handlePostError(error, 'ARRET URGENCE');
+        handlePostError(error, 'EMERGENCY STOP');
     }
 }
 
 async function acquittement() {
     try {
         await postMachineCommand(COMMANDS.reset);
-        log('Commande ACQUITTEMENT envoyee');
+        log('ACKNOWLEDGE command sent');
     } catch (error) {
-        handlePostError(error, 'ACQUITTEMENT');
+        handlePostError(error, 'ACKNOWLEDGE');
     }
 }
 
 async function mettreSac() {
     try {
         await postMachineCommand(COMMANDS.sac);
-        log('Commande PRESENCE SAC envoyee');
+        log('BAG PRESENT command sent');
     } catch (error) {
-        handlePostError(error, 'METTRE SAC');
+        handlePostError(error, 'PLACE BAG');
     }
 }
 
@@ -442,10 +442,10 @@ async function applyTargetWeight() {
     try {
         await postMachineCommand(COMMANDS.targetWeight, Number(value.toFixed(1)));
         state.targetWeight = value;
-        log(`Consigne poids envoyee: ${value.toFixed(1)} kg`);
+        log(`Target weight sent: ${value.toFixed(1)} kg`);
         updateUI();
     } catch (error) {
-        handlePostError(error, 'CONSIGNE POIDS');
+        handlePostError(error, 'TARGET WEIGHT');
     }
 }
 
@@ -494,7 +494,7 @@ function clearPallet() {
     state.bagsProducedCounterPrev = null;
     state.pendingDrops = 0;
     dom.txtCount.textContent = '0';
-    log('Palette videe');
+    log('Pallet cleared');
 }
 
 function resetBagStates() {
@@ -661,7 +661,7 @@ function syncActiveSpoutFromPlc(plcData) {
 
     if (previousActive !== plcSpoutIndex) {
         animateWorker();
-        log(`Bec actif PLC: ${plcSpoutIndex + 1}`);
+        log(`Active PLC spout: ${plcSpoutIndex + 1}`);
     }
 
     bag.occupied = true;
@@ -823,16 +823,16 @@ function updateModeButtons() {
 function updateUI() {
     const noModeSelected = !state.modeLocal && !state.modeCentral;
     const modeText = noModeSelected
-        ? (state.connected ? 'A CHOISIR' : '---')
+        ? (state.connected ? 'SELECT' : '---')
         : (state.modeLocal ? 'LOCAL' : 'CENTRAL');
     const machineRunning = state.motorEnsacheuse || state.motorBande;
 
     dom.txtMode.textContent = modeText;
-    dom.txtState.textContent = machineRunning ? 'EN MARCHE' : 'ARRET';
+    dom.txtState.textContent = machineRunning ? 'RUNNING' : 'STOP';
     dom.txtTarget.textContent = state.targetWeight.toFixed(1);
     dom.txtTargetLive.textContent = state.targetWeight.toFixed(1);
     dom.txtWeight.textContent = state.liveWeight.toFixed(1);
-    dom.txtFault.textContent = state.faultGlobal ? 'ACTIF' : 'AUCUN';
+    dom.txtFault.textContent = state.faultGlobal ? 'ACTIVE' : 'NONE';
     dom.txtCount.textContent = String(state.sacCount);
 
     dom.vAu.classList.toggle('v-active', state.faults.au);
@@ -853,19 +853,19 @@ function updateUI() {
     dom.btnApplyTarget.disabled = !state.connected;
 
     if (!state.socketConnected) {
-        dom.systemStatus.textContent = 'PASSERELLE: DECONNECTEE';
+        dom.systemStatus.textContent = 'GATEWAY: DISCONNECTED';
         dom.systemStatus.classList.remove('status-ok');
         dom.systemStatus.classList.add('status-fault');
     } else if (!state.connected) {
-        dom.systemStatus.textContent = 'PLC: DECONNECTE';
+        dom.systemStatus.textContent = 'PLC: DISCONNECTED';
         dom.systemStatus.classList.remove('status-ok');
         dom.systemStatus.classList.add('status-fault');
     } else if (state.faultGlobal) {
-        dom.systemStatus.textContent = 'PLC: DEFAUT ACTIF';
+        dom.systemStatus.textContent = 'PLC: FAULT ACTIVE';
         dom.systemStatus.classList.remove('status-ok');
         dom.systemStatus.classList.add('status-fault');
     } else {
-        dom.systemStatus.textContent = 'PLC: CONNECTE';
+        dom.systemStatus.textContent = 'PLC: CONNECTED';
         dom.systemStatus.classList.remove('status-fault');
         dom.systemStatus.classList.add('status-ok');
     }
@@ -881,7 +881,7 @@ function animateWorker() {
 }
 
 function handlePostError(error, commandLabel) {
-    log(`${commandLabel} echoue: ${error.message}`);
+    log(`${commandLabel} failed: ${error.message}`);
 }
 
 function log(message) {
